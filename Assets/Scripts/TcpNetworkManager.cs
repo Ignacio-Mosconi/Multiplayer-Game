@@ -21,6 +21,16 @@ public class TcpNetworkManager : MonoBehaviourSingleton<TcpNetworkManager>,  IDa
                 iterator.Current.CloseClient();
     }
 
+    void Update()
+    {
+        if (IsServer)
+            using (var iterator = clients.GetEnumerator())
+                while (iterator.MoveNext())
+                    iterator.Current.FlushReceivedData();
+        else if (client != null)
+            client.FlushReceivedData();
+    }
+
     void OnServerConnect(IAsyncResult asyncResult)
     {
         TcpClient tcpClient = tcpListener.EndAcceptTcpClient(asyncResult);
