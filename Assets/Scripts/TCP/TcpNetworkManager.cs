@@ -60,7 +60,7 @@ public class TcpNetworkManager : MonoBehaviourSingleton<TcpNetworkManager>,  IDa
         tcpClient.BeginConnect(serverIP, port, (ar) => client.OnEndConnection(ar), null);
     }
 
-    public void ReceiveData(byte[] data)
+    public void ReceiveData(byte[] data, IPEndPoint ipEndPoint = null)
     {
         if (OnReceiveData != null)
             OnReceiveData.Invoke(data);
