@@ -10,7 +10,7 @@ public class TcpNetworkManager : MonoBehaviourSingleton<TcpNetworkManager>,  IDa
     IPAddress serverIP;
     TcpListener tcpListener;
 
-    public Action<byte[]> OnReceiveData;
+    public Action<byte[], IPEndPoint> OnReceiveData;
     public bool IsServer { get; private set; }
 
     void OnApplicationQuit()
@@ -63,7 +63,7 @@ public class TcpNetworkManager : MonoBehaviourSingleton<TcpNetworkManager>,  IDa
     public void ReceiveData(byte[] data, IPEndPoint ipEndPoint = null)
     {
         if (OnReceiveData != null)
-            OnReceiveData.Invoke(data);
+            OnReceiveData.Invoke(data, ipEndPoint);
     }
 
     public void OnClientDisconnect(TcpConnectedClient client)

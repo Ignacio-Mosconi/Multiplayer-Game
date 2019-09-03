@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 using TMPro;
 
@@ -14,13 +15,11 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
 
     void Start()
     {
-        TcpNetworkManager.Instance.OnReceiveData += OnReceiveData;
-
         chatText.text = "";
         chatInputField.onEndEdit.AddListener(OnEndEditChatMessage);
     }
 
-    void OnReceiveData(byte[] data)
+    void OnReceiveData(byte[] data, IPEndPoint ipEndPoint = null)
     {
         if (TcpNetworkManager.Instance.IsServer)
             TcpNetworkManager.Instance.Broadcast(data);
@@ -44,5 +43,13 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             chatInputField.Select();
             chatInputField.text = "";
         }
+    }
+
+    public void AddReceptionCallback(ConnectionProtocol connectionProtocol)
+    {
+        if (connectionProtocol == ConnectionProtocol.TCP)
+            TcpNetworkManager.Instance.OnReceiveData += OnReceiveData;
+        else
+            UdpNetworkManager.Instance.OnReceiveData += OnReceiveData;
     }
 }
