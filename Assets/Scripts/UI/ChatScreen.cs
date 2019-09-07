@@ -16,13 +16,14 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
     void Start()
     {
         chatText.text = "";
+        NetworkSetUpScreen.Instance.NetworkManager.OnReceiveData += OnReceiveData;
         chatInputField.onEndEdit.AddListener(OnEndEditChatMessage);
     }
 
     void OnReceiveData(byte[] data, IPEndPoint ipEndPoint = null)
     {
-        if (TcpNetworkManager.Instance.IsServer)
-            TcpNetworkManager.Instance.Broadcast(data);
+        if (NetworkSetUpScreen.Instance.NetworkManager.IsServer)
+            NetworkSetUpScreen.Instance.NetworkManager.Broadcast(data);
 
         chatText.text += System.Text.Encoding.UTF8.GetString(data, 0, data.Length) + System.Environment.NewLine;
     }
@@ -31,25 +32,17 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
     {
         if (chatMessage != "")
         {
-            if (TcpNetworkManager.Instance.IsServer)
+            if (NetworkSetUpScreen.Instance.NetworkManager.IsServer)
             {
-                TcpNetworkManager.Instance.Broadcast(System.Text.Encoding.UTF8.GetBytes(chatMessage));
+                NetworkSetUpScreen.Instance.NetworkManager.Broadcast(System.Text.Encoding.UTF8.GetBytes(chatMessage));
                 chatText.text += chatMessage + System.Environment.NewLine;
             }
             else
-                TcpNetworkManager.Instance.SendMessageToServer(System.Text.Encoding.UTF8.GetBytes(chatMessage));
+                NetworkSetUpScreen.Instance.NetworkManager.SendToServer(System.Text.Encoding.UTF8.GetBytes(chatMessage));
 
             chatInputField.ActivateInputField();
             chatInputField.Select();
             chatInputField.text = "";
         }
-    }
-
-    public void AddReceptionCallback(ConnectionProtocol connectionProtocol)
-    {
-        if (connectionProtocol == ConnectionProtocol.TCP)
-            TcpNetworkManager.Instance.OnReceiveData += OnReceiveData;
-        else
-            UdpNetworkManager.Instance.OnReceiveData += OnReceiveData;
     }
 }

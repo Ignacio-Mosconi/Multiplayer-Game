@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-public class TcpNetworkManager : MonoBehaviourSingleton<TcpNetworkManager>,  IDataReceiver
+public class TcpNetworkManager : NetworkManager
 {
     List<TcpConnectedClient> clients = new List<TcpConnectedClient>();
     TcpConnectedClient client;
     IPAddress serverIP;
     TcpListener tcpListener;
 
-    public Action<byte[], IPEndPoint> OnReceiveData;
-    public bool IsServer { get; private set; }
+    public static new TcpNetworkManager Instance 
+    { 
+        get { return NetworkManager.Instance as TcpNetworkManager; }
+    }
 
     void OnApplicationQuit()
     {
@@ -40,7 +42,7 @@ public class TcpNetworkManager : MonoBehaviourSingleton<TcpNetworkManager>,  IDa
         tcpListener.BeginAcceptTcpClient(OnServerConnect, null);
     }
 
-    public void StartServer(int port)
+    public override void StartServer(int port)
     {
         IsServer = true;
         tcpListener = new TcpListener(IPAddress.Any, port);
@@ -49,7 +51,7 @@ public class TcpNetworkManager : MonoBehaviourSingleton<TcpNetworkManager>,  IDa
         tcpListener.BeginAcceptTcpClient(OnServerConnect, null);
     }
 
-    public void StartClient(IPAddress serverIP, int port)
+    public override void StartClient(IPAddress serverIP, int port)
     {
         IsServer = false;
         this.serverIP = serverIP;
@@ -60,25 +62,19 @@ public class TcpNetworkManager : MonoBehaviourSingleton<TcpNetworkManager>,  IDa
         tcpClient.BeginConnect(serverIP, port, (ar) => client.OnEndConnection(ar), null);
     }
 
-    public void ReceiveData(byte[] data, IPEndPoint ipEndPoint = null)
-    {
-        if (OnReceiveData != null)
-            OnReceiveData.Invoke(data, ipEndPoint);
-    }
-
     public void OnClientDisconnect(TcpConnectedClient client)
     {
         clients.Remove(client);
     }
 
-    public void Broadcast(byte[] data)
+    public override void Broadcast(byte[] data)
     {
         using (var iterator = clients.GetEnumerator())
             while (iterator.MoveNext())
                 iterator.Current.Send(data);
     }
 
-    public void SendMessageToServer(byte[] data)
+    public override void SendToServer(byte[] data)
     {
         client.Send(data);
     }

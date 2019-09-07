@@ -14,22 +14,32 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
     [SerializeField] TMP_InputField addressInputField = default;
     [SerializeField] TMP_InputField portInputField = default;
 
+    public NetworkManager NetworkManager { get; private set; }
+
+    void Start()
+    {
+        SetUpNetworkProtocol();
+    }
+
     void MoveToChatScreen()
     {
-        ChatScreen.Instance.AddReceptionCallback(connectionProtocol);
         ChatScreen.Instance.gameObject.SetActive(true);
         gameObject.SetActive(false);
+    }
+
+    void SetUpNetworkProtocol()
+    {
+        if (connectionProtocol == ConnectionProtocol.TCP)
+            NetworkManager = TcpNetworkManager.Instance;
+        else
+            NetworkManager = UdpNetworkManager.Instance;
     }
 
     public void StartServer()
     {
         int port = System.Convert.ToInt32(portInputField.text);
 
-        if (connectionProtocol == ConnectionProtocol.TCP)
-            TcpNetworkManager.Instance.StartServer(port);
-        else
-            UdpNetworkManager.Instance.StartServer(port);
-        
+        NetworkManager.StartServer(port);  
         MoveToChatScreen();
     }
 
@@ -37,12 +47,8 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
     {
         IPAddress ipAddress = IPAddress.Parse(addressInputField.text);
         int port = System.Convert.ToInt32(portInputField.text);
-
-        if (connectionProtocol == ConnectionProtocol.TCP)
-            TcpNetworkManager.Instance.StartClient(ipAddress, port);
-        else
-            UdpNetworkManager.Instance.StartClient(ipAddress, port);
-
+        
+        NetworkManager.StartClient(ipAddress, port);
         MoveToChatScreen();
     }
 }

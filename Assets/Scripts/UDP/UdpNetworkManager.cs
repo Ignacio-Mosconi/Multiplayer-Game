@@ -17,18 +17,20 @@ public struct UdpClientData
     }
 }
 
-public class UdpNetworkManager : MonoBehaviourSingleton<UdpNetworkManager>, IDataReceiver
+public class UdpNetworkManager : NetworkManager
 {
     public IPAddress IPAddress { get; private set; }
-    public bool IsServer { get; private set; }
     public int Port { get; private set; }
-
-    public Action<byte[], IPEndPoint> OnReceiveData;
 
     Dictionary<int, UdpClientData> udpClientsData = new Dictionary<int, UdpClientData>();
     Dictionary<IPEndPoint, int> udpClientsIDs = new Dictionary<IPEndPoint, int>();
     UdpConnection udpConnection;
     int clientID = 0;
+
+    public static new UdpNetworkManager Instance
+    {
+        get { return NetworkManager.Instance as UdpNetworkManager; }
+    }
 
     void Update()
     {
@@ -38,14 +40,14 @@ public class UdpNetworkManager : MonoBehaviourSingleton<UdpNetworkManager>, IDat
 
     #region Server Methods
 
-    public void StartServer(int port)
+    public override void StartServer(int port)
     {
         udpConnection = new UdpServerConnection(port, this);
         IsServer = true;
         Port = port;
     }
 
-    public void Broadcast(byte[] data)
+    public override void Broadcast(byte[] data)
     {
         UdpServerConnection udpServerConnection = udpConnection as UdpServerConnection;
 
@@ -60,7 +62,7 @@ public class UdpNetworkManager : MonoBehaviourSingleton<UdpNetworkManager>, IDat
 
     #region Client Methods
 
-    public void StartClient(IPAddress ipAddress, int port)
+    public override void StartClient(IPAddress ipAddress, int port)
     {
         udpConnection = new UdpClientConnection(ipAddress, port, this);
         IsServer = false;
@@ -89,7 +91,7 @@ public class UdpNetworkManager : MonoBehaviourSingleton<UdpNetworkManager>, IDat
         udpClientsIDs.Remove(ipEndPoint);
     }
 
-    public void SendToServer(byte[] data)
+    public override void SendToServer(byte[] data)
     {
         UdpClientConnection udpClientConnection = udpConnection as UdpClientConnection;
 
@@ -99,12 +101,11 @@ public class UdpNetworkManager : MonoBehaviourSingleton<UdpNetworkManager>, IDat
 
     #endregion
 
-    public void ReceiveData(byte[] data, IPEndPoint ipEndPoint)
+    public override void ReceiveData(byte[] data, IPEndPoint ipEndPoint)
     {
         if (!udpClientsIDs.ContainsKey(ipEndPoint))
             AddClient(ipEndPoint);
-
-        if (OnReceiveData != null)
-            OnReceiveData.Invoke(data, ipEndPoint);
+        
+        base.ReceiveData(data, ipEndPoint);
     }
 }
