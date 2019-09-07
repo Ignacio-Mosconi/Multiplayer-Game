@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class MonoBehaviourSingleton<T> : MonoBehaviour where T : MonoBehaviourSingleton<T>
 {
-    static MonoBehaviourSingleton<T> instance;
+    protected static MonoBehaviourSingleton<T> instance;
 
     public static T Instance
     {
@@ -12,7 +12,7 @@ public class MonoBehaviourSingleton<T> : MonoBehaviour where T : MonoBehaviourSi
                 instance = FindObjectOfType<MonoBehaviourSingleton<T>>();
             if (!instance)
             {
-                GameObject gameObject = new GameObject("MonoBehaviour Singleton");
+                GameObject gameObject = new GameObject(typeof(T).Name);
                 instance = gameObject.AddComponent<MonoBehaviourSingleton<T>>();
             }
 
@@ -29,5 +29,7 @@ public class MonoBehaviourSingleton<T> : MonoBehaviour where T : MonoBehaviourSi
     {
         if (Instance != this)
             Destroy(gameObject);
+        else
+            DontDestroyOnLoad(gameObject);
     }
 }

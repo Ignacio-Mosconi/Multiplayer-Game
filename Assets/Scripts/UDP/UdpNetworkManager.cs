@@ -29,7 +29,18 @@ public class UdpNetworkManager : NetworkManager
 
     public static new UdpNetworkManager Instance
     {
-        get { return NetworkManager.Instance as UdpNetworkManager; }
+        get
+        {
+            if (!instance)
+                instance = FindObjectOfType<UdpNetworkManager>();
+            if (!instance)
+            {
+                GameObject gameObject = new GameObject(typeof(UdpNetworkManager).Name);
+                instance = gameObject.AddComponent<UdpNetworkManager>();
+            }
+
+            return instance as UdpNetworkManager;
+        }
     }
 
     void Update()

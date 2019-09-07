@@ -9,22 +9,18 @@ public enum ConnectionProtocol
 
 public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
 {
-    [SerializeField] ConnectionProtocol connectionProtocol = ConnectionProtocol.UDP;
-
     [SerializeField] TMP_InputField addressInputField = default;
     [SerializeField] TMP_InputField portInputField = default;
+    [SerializeField] TMP_Dropdown protocolDropdown = default;
+
+    ConnectionProtocol connectionProtocol;
 
     public NetworkManager NetworkManager { get; private set; }
 
     void Start()
     {
-        SetUpNetworkProtocol();
-    }
-
-    void MoveToChatScreen()
-    {
-        ChatScreen.Instance.gameObject.SetActive(true);
-        gameObject.SetActive(false);
+        connectionProtocol = (ConnectionProtocol)protocolDropdown.value;
+        protocolDropdown.onValueChanged.AddListener(ChangeNetworkProtocol);
     }
 
     void SetUpNetworkProtocol()
@@ -35,10 +31,22 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
             NetworkManager = UdpNetworkManager.Instance;
     }
 
+    void MoveToChatScreen()
+    {
+        ChatScreen.Instance.gameObject.SetActive(true);
+        gameObject.SetActive(false);
+    }
+
+    void ChangeNetworkProtocol(int value)
+    {
+        connectionProtocol = (ConnectionProtocol)value;
+    }
+
     public void StartServer()
     {
         int port = System.Convert.ToInt32(portInputField.text);
 
+        SetUpNetworkProtocol();
         NetworkManager.StartServer(port);  
         MoveToChatScreen();
     }
@@ -47,7 +55,8 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
     {
         IPAddress ipAddress = IPAddress.Parse(addressInputField.text);
         int port = System.Convert.ToInt32(portInputField.text);
-        
+
+        SetUpNetworkProtocol();
         NetworkManager.StartClient(ipAddress, port);
         MoveToChatScreen();
     }
