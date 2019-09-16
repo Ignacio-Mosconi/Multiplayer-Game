@@ -2,11 +2,6 @@
 using UnityEngine;
 using TMPro;
 
-public enum ConnectionProtocol
-{
-    TCP, UDP
-}
-
 public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
 {
     [SerializeField] TMP_InputField addressInputField = default;
@@ -15,20 +10,10 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
 
     ConnectionProtocol connectionProtocol;
 
-    public NetworkManager NetworkManager { get; private set; }
-
     void Start()
     {
-        connectionProtocol = (ConnectionProtocol)protocolDropdown.value;
+        ChangeNetworkProtocol(protocolDropdown.value);
         protocolDropdown.onValueChanged.AddListener(ChangeNetworkProtocol);
-    }
-
-    void SetUpNetworkProtocol()
-    {
-        if (connectionProtocol == ConnectionProtocol.TCP)
-            NetworkManager = TcpNetworkManager.Instance;
-        else
-            NetworkManager = UdpNetworkManager.Instance;
     }
 
     void MoveToChatScreen()
@@ -40,14 +25,14 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
     void ChangeNetworkProtocol(int value)
     {
         connectionProtocol = (ConnectionProtocol)value;
+        NetworkManager.ConnectionProtocol = connectionProtocol;
     }
 
     public void StartServer()
     {
         int port = System.Convert.ToInt32(portInputField.text);
 
-        SetUpNetworkProtocol();
-        NetworkManager.StartServer(port);  
+        NetworkManager.Instance.StartServer(port);  
         MoveToChatScreen();
     }
 
@@ -56,8 +41,7 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
         IPAddress ipAddress = IPAddress.Parse(addressInputField.text);
         int port = System.Convert.ToInt32(portInputField.text);
 
-        SetUpNetworkProtocol();
-        NetworkManager.StartClient(ipAddress, port);
+        NetworkManager.Instance.StartClient(ipAddress, port);
         MoveToChatScreen();
     }
 }

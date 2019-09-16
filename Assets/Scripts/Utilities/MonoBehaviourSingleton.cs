@@ -2,21 +2,21 @@ using UnityEngine;
 
 public class MonoBehaviourSingleton<T> : MonoBehaviour where T : MonoBehaviourSingleton<T>
 {
-    protected static MonoBehaviourSingleton<T> instance;
+    protected static T instance;
 
     public static T Instance
     {
         get
         {
             if (!instance)
-                instance = FindObjectOfType<MonoBehaviourSingleton<T>>();
+                instance = FindObjectOfType<T>();
             if (!instance)
             {
                 GameObject gameObject = new GameObject(typeof(T).Name);
-                instance = gameObject.AddComponent<MonoBehaviourSingleton<T>>();
+                instance = gameObject.AddComponent<T>();
             }
 
-            return (T)instance;
+            return instance;
         }
     }
 

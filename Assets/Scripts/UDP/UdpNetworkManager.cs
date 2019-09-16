@@ -72,15 +72,7 @@ public class UdpNetworkManager : NetworkManager
 
     #region Client Methods
 
-    public override void StartClient(IPAddress ipAddress, int port)
-    {
-        udpConnection = new UdpClientConnection(ipAddress, port, this);
-        IsServer = false;
-        Port = port;
-        IPAddress = ipAddress;
-    }
-
-    public void AddClient(IPEndPoint ipEndPoint)
+    void AddClient(IPEndPoint ipEndPoint)
     {
         UdpClientData udpClientData = new UdpClientData(ipEndPoint, clientID, Time.realtimeSinceStartup);
 
@@ -90,7 +82,7 @@ public class UdpNetworkManager : NetworkManager
         clientID++;
     }
 
-    public void RemoveClient(IPEndPoint ipEndPoint)
+    void RemoveClient(IPEndPoint ipEndPoint)
     {
         if (!udpClientsIDs.ContainsKey(ipEndPoint))
         {
@@ -99,6 +91,14 @@ public class UdpNetworkManager : NetworkManager
         }
 
         udpClientsIDs.Remove(ipEndPoint);
+    }
+
+    public override void StartClient(IPAddress ipAddress, int port)
+    {
+        udpConnection = new UdpClientConnection(ipAddress, port, this);
+        IsServer = false;
+        Port = port;
+        IPAddress = ipAddress;
     }
 
     public override void SendToServer(byte[] data)
