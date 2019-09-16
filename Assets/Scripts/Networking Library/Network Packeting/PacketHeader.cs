@@ -3,19 +3,18 @@ using System.IO;
 public class PacketHeader : ISerializablePacket
 {
     public ushort PacketTypeIndex { get; set; }
-
-    uint packetID;
-    uint senderID;
-    uint objectID;
+    public uint PacketID  { get; set; }
+    public uint SenderID  { get; set; }
+    public uint ObjectID  { get; set; }
 
     public void Serialize(Stream stream)
     {
         BinaryWriter binaryWriter = new BinaryWriter(stream);
 
         binaryWriter.Write(PacketTypeIndex);
-        binaryWriter.Write(packetID);
-        binaryWriter.Write(senderID);
-        binaryWriter.Write(objectID);
+        binaryWriter.Write(PacketID);
+        binaryWriter.Write(SenderID);
+        binaryWriter.Write(ObjectID);
     }
 
     public void Deserialize(Stream stream)
@@ -23,8 +22,8 @@ public class PacketHeader : ISerializablePacket
         BinaryReader binaryReader = new BinaryReader(stream);
 
         PacketTypeIndex = binaryReader.ReadUInt16();
-        packetID = binaryReader.ReadUInt32();
-        senderID = binaryReader.ReadUInt32();
-        objectID = binaryReader.ReadUInt32();
+        PacketID = binaryReader.ReadUInt32();
+        SenderID = binaryReader.ReadUInt32();
+        ObjectID = binaryReader.ReadUInt32();
     }
 }

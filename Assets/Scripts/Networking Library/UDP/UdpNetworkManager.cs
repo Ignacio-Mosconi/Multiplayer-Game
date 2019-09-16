@@ -5,10 +5,10 @@ using UnityEngine;
 public struct UdpClientData
 {
     public IPEndPoint ipEndPoint;
-    public int id;
+    public uint id;
     public float timestamp;
 
-    public UdpClientData(IPEndPoint ipEndPoint, int id, float timestamp)
+    public UdpClientData(IPEndPoint ipEndPoint, uint id, float timestamp)
     {
         this.ipEndPoint = ipEndPoint;
         this.id = id;
@@ -20,11 +20,11 @@ public class UdpNetworkManager : NetworkManager
 {
     public IPAddress IPAddress { get; private set; }
     public int Port { get; private set; }
+    public uint ClientID { get; private set; }
 
-    Dictionary<int, UdpClientData> udpClientsData = new Dictionary<int, UdpClientData>();
-    Dictionary<IPEndPoint, int> udpClientsIDs = new Dictionary<IPEndPoint, int>();
+    Dictionary<uint, UdpClientData> udpClientsData = new Dictionary<uint, UdpClientData>();
+    Dictionary<IPEndPoint, uint> udpClientsIDs = new Dictionary<IPEndPoint, uint>();
     UdpConnection udpConnection;
-    int clientID = 0;
 
     public static new UdpNetworkManager Instance
     {
@@ -74,12 +74,12 @@ public class UdpNetworkManager : NetworkManager
 
     void AddClient(IPEndPoint ipEndPoint)
     {
-        UdpClientData udpClientData = new UdpClientData(ipEndPoint, clientID, Time.realtimeSinceStartup);
+        UdpClientData udpClientData = new UdpClientData(ipEndPoint, ClientID, Time.realtimeSinceStartup);
 
-        udpClientsIDs[ipEndPoint] = clientID;
-        udpClientsData.Add(clientID, udpClientData);
+        udpClientsIDs[ipEndPoint] = ClientID;
+        udpClientsData.Add(ClientID, udpClientData);
 
-        clientID++;
+        ClientID++;
     }
 
     void RemoveClient(IPEndPoint ipEndPoint)
