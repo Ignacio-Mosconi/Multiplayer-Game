@@ -1,3 +1,6 @@
+using System;
+using System.Text;
+using System.IO;
 using System.Net;
 using UnityEngine;
 using TMPro;
@@ -13,32 +16,72 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         gameObject.SetActive(false);
     }
 
+    void OnEnable()
+    {
+        if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
+            NetworkManager.Instance.OnReceiveData += OnTcpDataReceived;
+        else
+            PacketsManager.Instance.AddPacketListener(0, OnUdpPacketReceived);
+    }
+
+    void OnDisable()
+    {
+        if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
+            NetworkManager.Instance.OnReceiveData -= OnTcpDataReceived;            
+        else
+            PacketsManager.Instance.RemovePacketListener(0);
+    }
+
     void Start()
     {
         chatText.text = "";
-        NetworkManager.Instance.OnReceiveData += OnReceiveData;
         chatInputField.onEndEdit.AddListener(OnEndEditChatMessage);
     }
 
-    void OnReceiveData(byte[] data, IPEndPoint ipEndPoint = null)
+    void OnUdpPacketReceived(ushort packetTypeIndex, Stream stream)
+    {
+        if (packetTypeIndex !=  (ushort)PacketType.Message)
+            return;
+
+        ChatMessagePacket chatMessagePacket = new ChatMessagePacket();
+
+        chatMessagePacket.Deserialize(stream);
+
+        if (UdpNetworkManager.Instance.IsServer)
+            ChatMessagesManager.Instance.SendChatMessage(chatMessagePacket.Payload, 0);
+
+        chatText.text += chatMessagePacket.Payload + Environment.NewLine;
+    }
+
+    void OnTcpDataReceived(byte[] data, IPEndPoint ipEndPoint = null)
     {
         if (NetworkManager.Instance.IsServer)
             NetworkManager.Instance.Broadcast(data);
 
-        chatText.text += System.Text.Encoding.UTF8.GetString(data, 0, data.Length) + System.Environment.NewLine;
+        chatText.text += System.Text.Encoding.UTF8.GetString(data, 0, data.Length) + Environment.NewLine;
     }
 
     void OnEndEditChatMessage(string chatMessage)
     {
         if (chatMessage != "")
         {
-            if (NetworkManager.Instance.IsServer)
+            if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             {
-                NetworkManager.Instance.Broadcast(System.Text.Encoding.UTF8.GetBytes(chatMessage));
-                chatText.text += chatMessage + System.Environment.NewLine;
+                if (NetworkManager.Instance.IsServer)
+                {
+                    NetworkManager.Instance.Broadcast(Encoding.UTF8.GetBytes(chatMessage));
+                    chatText.text += chatMessage + Environment.NewLine;
+                }
+                else
+                    NetworkManager.Instance.SendToServer(Encoding.UTF8.GetBytes(chatMessage));
             }
             else
-                NetworkManager.Instance.SendToServer(System.Text.Encoding.UTF8.GetBytes(chatMessage));
+            {
+                if (NetworkManager.Instance.IsServer)
+                    chatText.text += chatMessage + Environment.NewLine;
+                else
+                    ChatMessagesManager.Instance.SendChatMessage(chatMessage, 0);
+            }
 
             chatInputField.ActivateInputField();
             chatInputField.Select();
