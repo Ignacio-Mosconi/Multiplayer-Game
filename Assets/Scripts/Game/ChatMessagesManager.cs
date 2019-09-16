@@ -1,18 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
-public class ChatMessagesManager : MonoBehaviour
+﻿public class ChatMessagesManager : MonoBehaviourSingleton<ChatMessagesManager>
 {
-    // Start is called before the first frame update
-    void Start()
+    public void SendChatMessage(string message, uint objectID)
     {
-        
-    }
+        ChatMessagePacket chatMessagePacket = new ChatMessagePacket();
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        chatMessagePacket.Payload = message;
+        PacketsManager.Instance.SendPacket(chatMessagePacket, objectID);
     }
 }

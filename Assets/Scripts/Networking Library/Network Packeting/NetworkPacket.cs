@@ -2,9 +2,8 @@ using System.IO;
 
 public abstract class NetworkPacket<T> : ISerializablePacket
 {
+    public T Payload { get; set; }
     public ushort PacketTypeIndex { get; private set; }
-    
-    protected T payload;
 
     public NetworkPacket(ushort packetTypeIndex)
     {
