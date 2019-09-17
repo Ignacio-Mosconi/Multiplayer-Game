@@ -20,7 +20,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
         PacketHeader packetHeader = new PacketHeader();
         MemoryStream memoryStream = new MemoryStream();
 
-        packetHeader.PacketID = currentPacketID;
+        packetHeader.PacketID = currentPacketID++;
         packetHeader.SenderID = UdpNetworkManager.Instance.ClientID;
         packetHeader.ObjectID = objectID;
         packetHeader.PacketTypeIndex = networkPacket.PacketTypeIndex;
@@ -40,7 +40,6 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
         memoryStream = new MemoryStream(data);
 
         packetHeader.Deserialize(memoryStream);
-        memoryStream.Close();
     }
 
     void InvokeReceptionCallback(uint objectID, ushort packetTypeIndex, Stream stream)
@@ -51,7 +50,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
 
     public void AddPacketListener(uint objectID, Action<ushort, Stream> receptionCallback)
     {
-        if (packetReceptionCallbacks.ContainsKey(objectID))
+        if (!packetReceptionCallbacks.ContainsKey(objectID))
             packetReceptionCallbacks.Add(objectID, receptionCallback);
     }
 
@@ -78,5 +77,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
 
         DeserializePacket(data, out packetHeader, out memoryStream);
         InvokeReceptionCallback(packetHeader.ObjectID, packetHeader.PacketTypeIndex, memoryStream);
+
+        memoryStream.Close();
     }
 }

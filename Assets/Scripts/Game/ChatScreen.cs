@@ -40,7 +40,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
 
     void OnUdpPacketReceived(ushort packetTypeIndex, Stream stream)
     {
-        if (packetTypeIndex !=  (ushort)PacketType.Message)
+        if (packetTypeIndex != (ushort)PacketType.Message)
             return;
 
         ChatMessagePacket chatMessagePacket = new ChatMessagePacket();
@@ -79,8 +79,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             {
                 if (NetworkManager.Instance.IsServer)
                     chatText.text += chatMessage + Environment.NewLine;
-                else
-                    ChatMessagesManager.Instance.SendChatMessage(chatMessage, 0);
+                ChatMessagesManager.Instance.SendChatMessage(chatMessage, 0);
             }
 
             chatInputField.ActivateInputField();
