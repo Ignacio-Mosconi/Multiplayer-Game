@@ -27,12 +27,13 @@ public class TcpNetworkManager : NetworkManager
         }
     }
 
-    void OnApplicationQuit()
+    void OnDestroy()
     {
-        tcpListener?.Stop();
-        using (var iterator = clients.GetEnumerator())
-            while (iterator.MoveNext())
-                iterator.Current.CloseClient();
+        if (tcpListener != null)
+            tcpListener.Stop();
+
+        foreach (TcpConnectedClient client in clients)
+            client.CloseClient();
     }
 
     void Update()

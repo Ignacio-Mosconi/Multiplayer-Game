@@ -16,26 +16,22 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         gameObject.SetActive(false);
     }
 
-    void OnEnable()
+    void Start()
     {
+        chatText.text = "";
+
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             NetworkManager.Instance.OnReceiveData += OnTcpDataReceived;
         else
             PacketsManager.Instance.AddPacketListener(0, OnUdpPacketReceived);
     }
 
-    void OnDisable()
+    void OnDestroy()
     {
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             NetworkManager.Instance.OnReceiveData -= OnTcpDataReceived;            
         else
             PacketsManager.Instance.RemovePacketListener(0);
-    }
-
-    void Start()
-    {
-        chatText.text = "";
-        chatInputField.onEndEdit.AddListener(OnEndEditChatMessage);
     }
 
     void OnUdpPacketReceived(ushort packetTypeIndex, Stream stream)
@@ -61,7 +57,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         chatText.text += System.Text.Encoding.UTF8.GetString(data, 0, data.Length) + Environment.NewLine;
     }
 
-    void OnEndEditChatMessage(string chatMessage)
+    public void OnEndEditChatMessage(string chatMessage)
     {
         if (chatMessage != "")
         {
