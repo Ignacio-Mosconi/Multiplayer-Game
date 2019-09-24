@@ -1,8 +1,8 @@
 using System.IO;
 
-public class ChatMessagePacket : GameNetworkPacket<string>
+public class ChatMessagePacket : UserNetworkPacket<string>
 {
-    public ChatMessagePacket() : base(PacketType.Message)
+    public ChatMessagePacket() : base(UserPacketType.ChatMessage)
     {
 
     }

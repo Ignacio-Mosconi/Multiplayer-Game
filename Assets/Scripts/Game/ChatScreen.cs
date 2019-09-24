@@ -34,9 +34,9 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             PacketsManager.Instance.RemovePacketListener(0);
     }
 
-    void OnUdpPacketReceived(ushort packetTypeIndex, Stream stream)
+    void OnUdpPacketReceived(ushort userPacketTypeIndex, Stream stream)
     {
-        if (packetTypeIndex != (ushort)PacketType.Message)
+        if (userPacketTypeIndex != (ushort)UserPacketType.ChatMessage)
             return;
 
         ChatMessagePacket chatMessagePacket = new ChatMessagePacket();
