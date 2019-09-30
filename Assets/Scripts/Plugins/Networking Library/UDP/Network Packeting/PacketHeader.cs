@@ -11,7 +11,7 @@ enum PacketType
 
 public class PacketHeader : ISerializablePacket
 {
-    public ushort ProtocolID { get; set; } 
+    public ushort ProtocolID { get; set; }
     public ushort PacketTypeIndex { get; set; }
 
     public void Serialize(Stream stream)
