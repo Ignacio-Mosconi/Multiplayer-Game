@@ -51,8 +51,8 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
 
     void OnTcpDataReceived(byte[] data, IPEndPoint ipEndPoint = null)
     {
-        if (NetworkManager.Instance.IsServer)
-            NetworkManager.Instance.Broadcast(data);
+        if (TcpNetworkManager.Instance.IsServer)
+            TcpNetworkManager.Instance.Broadcast(data);
 
         chatText.text += System.Text.Encoding.UTF8.GetString(data, 0, data.Length) + Environment.NewLine;
     }
@@ -63,17 +63,17 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         {
             if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             {
-                if (NetworkManager.Instance.IsServer)
+                if (TcpNetworkManager.Instance.IsServer)
                 {
-                    NetworkManager.Instance.Broadcast(Encoding.UTF8.GetBytes(chatMessage));
+                    TcpNetworkManager.Instance.Broadcast(Encoding.UTF8.GetBytes(chatMessage));
                     chatText.text += chatMessage + Environment.NewLine;
                 }
                 else
-                    NetworkManager.Instance.SendToServer(Encoding.UTF8.GetBytes(chatMessage));
+                    TcpNetworkManager.Instance.SendToServer(Encoding.UTF8.GetBytes(chatMessage));
             }
             else
             {
-                if (NetworkManager.Instance.IsServer)
+                if (UdpNetworkManager.Instance.IsServer)
                     chatText.text += chatMessage + Environment.NewLine;
                 ChatMessagesManager.Instance.SendChatMessage(chatMessage, 0);
             }

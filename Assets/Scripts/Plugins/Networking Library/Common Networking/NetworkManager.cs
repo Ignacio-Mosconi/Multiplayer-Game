@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 
 public enum ConnectionProtocol
@@ -37,6 +38,4 @@ public abstract class NetworkManager : MonoBehaviourSingleton<NetworkManager>, I
 
     public abstract void StartServer(int port);
     public abstract void StartClient(IPAddress serverIP, int port);
-    public abstract void Broadcast(byte[] data);
-    public abstract void SendToServer(byte[] data);
 }

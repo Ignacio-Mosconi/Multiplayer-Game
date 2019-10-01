@@ -34,7 +34,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
             UserPacketHeader userPacketHeader = new UserPacketHeader();
             
             userPacketHeader.PacketID = currentPacketID++;
-            userPacketHeader.SenderID = UdpNetworkManager.Instance.ClientID;
+            userPacketHeader.SenderID = UdpConnectionManager.Instance.ClientID;
             userPacketHeader.ObjectID = objectID;
             userPacketHeader.UserPacketTypeIndex = userNetworkPacket.UserPacketTypeIndex;
             

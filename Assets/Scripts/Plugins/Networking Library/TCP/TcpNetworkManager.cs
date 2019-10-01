@@ -80,14 +80,14 @@ public class TcpNetworkManager : NetworkManager
         clients.Remove(client);
     }
 
-    public override void Broadcast(byte[] data)
+    public void Broadcast(byte[] data)
     {
         using (var iterator = clients.GetEnumerator())
             while (iterator.MoveNext())
                 iterator.Current.Send(data);
     }
 
-    public override void SendToServer(byte[] data)
+    public void SendToServer(byte[] data)
     {
         client.Send(data);
     }
