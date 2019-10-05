@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Net;
 
 public enum ConnectionProtocol
@@ -11,7 +10,7 @@ public abstract class NetworkManager : MonoBehaviourSingleton<NetworkManager>, I
 {
     public static ConnectionProtocol ConnectionProtocol { get; set; } = ConnectionProtocol.UDP;
     
-    public  Action<byte[], IPEndPoint> OnReceiveData;
+    public Action<byte[], IPEndPoint> OnReceiveData;
     public bool IsServer { get; protected set; }
 
     public static new NetworkManager Instance

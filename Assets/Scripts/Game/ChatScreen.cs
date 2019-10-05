@@ -23,7 +23,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             NetworkManager.Instance.OnReceiveData += OnTcpDataReceived;
         else
-            PacketsManager.Instance.AddPacketListener(0, OnUdpPacketReceived);
+            PacketsManager.Instance.AddUserPacketListener(0, OnUdpPacketReceived);
     }
 
     void OnDestroy()
@@ -31,7 +31,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             NetworkManager.Instance.OnReceiveData -= OnTcpDataReceived;            
         else
-            PacketsManager.Instance.RemovePacketListener(0);
+            PacketsManager.Instance.RemoveUserPacketListener(0);
     }
 
     void OnUdpPacketReceived(ushort userPacketTypeIndex, Stream stream)

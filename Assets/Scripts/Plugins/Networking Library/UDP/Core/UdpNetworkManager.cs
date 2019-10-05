@@ -78,12 +78,4 @@ public class UdpNetworkManager : NetworkManager
     }
 
     #endregion
-
-    // public override void ReceiveData(byte[] data, IPEndPoint ipEndPoint)
-    // {
-    //     if (!udpClientsIDs.ContainsKey(ipEndPoint))
-    //         AddClient(ipEndPoint);
-        
-    //     base.ReceiveData(data, ipEndPoint);
-    // }
 }

@@ -32,7 +32,10 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
     {
         int port = System.Convert.ToInt32(portInputField.text);
 
-        NetworkManager.Instance.StartServer(port);  
+        if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
+            TcpNetworkManager.Instance.StartServer(port);
+        else
+            UdpConnectionManager.Instance.CreateServer(port);  
         MoveToChatScreen();
     }
 
@@ -41,7 +44,11 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
         IPAddress ipAddress = IPAddress.Parse(addressInputField.text);
         int port = System.Convert.ToInt32(portInputField.text);
 
-        NetworkManager.Instance.StartClient(ipAddress, port);
+        if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
+            TcpNetworkManager.Instance.StartClient(ipAddress, port);
+        else
+            UdpConnectionManager.Instance.ConnectToServer(ipAddress, port);
+
         MoveToChatScreen();
     }
 }
