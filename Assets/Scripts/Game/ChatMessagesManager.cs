@@ -5,6 +5,6 @@
         ChatMessagePacket chatMessagePacket = new ChatMessagePacket();
 
         chatMessagePacket.Payload = message;
-        PacketsManager.Instance.SendPacket(chatMessagePacket, objectID);
+        PacketsManager.Instance.SendPacket(chatMessagePacket, null, objectID);
     }
 }

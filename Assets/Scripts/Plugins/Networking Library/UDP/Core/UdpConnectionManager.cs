@@ -17,6 +17,11 @@ public struct UdpClientData
     public IPEndPoint ipEndPoint;
     public uint id;
     public float timestamp;
+}
+
+public struct UdpPendingClientData
+{
+    public IPEndPoint ipEndPoint;
     public long clientSalt;
     public long serverSalt;
 }
@@ -25,11 +30,13 @@ public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
 {
     public uint ClientID { get; private set; }
 
-    Dictionary<uint, UdpClientData> udpClientsData = new Dictionary<uint, UdpClientData>();
     Dictionary<IPEndPoint, uint> udpClientsIDs = new Dictionary<IPEndPoint, uint>();
+    Dictionary<IPEndPoint, UdpPendingClientData> udpPendingClientsData = new Dictionary<IPEndPoint, UdpPendingClientData>();
+    Dictionary<uint, UdpClientData> udpClientsData = new Dictionary<uint, UdpClientData>();
+    Action onClientConnectedCallback;
     ClientConnectionState clientConnectionState = ClientConnectionState.Idle;
-    long clientSalt;
-    long challengeResult;
+    long saltGeneratedByClient;
+    long challengeResultGeneratedByClient;
 
     void Start()
     {
@@ -50,8 +57,8 @@ public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
             case ClientConnectionState.SendingChallengeResponse:
                 SendChallengeResponse();
                 break;
-            
-            case ClientConnectionState.Connected:
+
+            default:
                 break;
         }
     }
@@ -74,7 +81,8 @@ public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
                     ChallengeRequestPacket challengeRequestPacket = new ChallengeRequestPacket();
                     
                     challengeRequestPacket.Deserialize(stream);
-                    challengeResult = clientSalt ^ challengeRequestPacket.Payload.serverSalt;
+                    
+                    challengeResultGeneratedByClient = saltGeneratedByClient ^ challengeRequestPacket.Payload.serverSalt;
                     clientConnectionState = ClientConnectionState.SendingChallengeResponse;
                 }
                 break;
@@ -85,40 +93,50 @@ public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
                     ConnectionAcceptedPacket connectionAcceptedPacket = new ConnectionAcceptedPacket();
                     
                     connectionAcceptedPacket.Deserialize(stream);
-                    Debug.Log(connectionAcceptedPacket.Payload.welcomeMessage);
+                    UdpNetworkManager.Instance.SetClientID(connectionAcceptedPacket.Payload.clientID);
+                    onClientConnectedCallback?.Invoke();
+                    onClientConnectedCallback = null;
                     clientConnectionState = ClientConnectionState.Connected;
                 }
                 break;
 
             case PacketType.ConnectionRequest:
-                if (UdpNetworkManager.Instance.IsServer)
+                if (UdpNetworkManager.Instance.IsServer && !udpClientsIDs.ContainsKey(ipEndPoint))
                 {
-                    if (!udpClientsIDs.ContainsKey(ipEndPoint))
+                    if (!udpPendingClientsData.ContainsKey(ipEndPoint))
                     {
                         ConnectionRequestPacket connectionRequestPacket = new ConnectionRequestPacket();
                         
                         connectionRequestPacket.Deserialize(stream);
-                        AddClient(ipEndPoint, connectionRequestPacket.Payload.clientSalt);
+                        AddPendingClient(ipEndPoint, connectionRequestPacket.Payload.clientSalt);
                     }
 
-                    UdpClientData udpClientData = udpClientsData[udpClientsIDs[ipEndPoint]];
+                    UdpPendingClientData udpPendingClientData = udpPendingClientsData[ipEndPoint];
 
-                    SendChallengeRequest(udpClientData);
+                    SendChallengeRequest(udpPendingClientData);
                 }
                 break;
 
             case PacketType.ChallengeResponse:
                 if (UdpNetworkManager.Instance.IsServer)
                 {
-                    if (udpClientsIDs.ContainsKey(ipEndPoint))
+                    if (udpPendingClientsData.ContainsKey(ipEndPoint))
                     {
                         ChallengeResponsePacket challengeResponsePacket = new ChallengeResponsePacket();
-                        UdpClientData udpClientData = udpClientsData[udpClientsIDs[ipEndPoint]];
+                        UdpPendingClientData udpPendingClientData = udpPendingClientsData[ipEndPoint];
                         
                         challengeResponsePacket.Deserialize(stream);
-                        if (challengeResponsePacket.Payload.result == (udpClientData.clientSalt ^ udpClientData.serverSalt))
-                            SendConnectionAccepted();
+
+                        long serverResult = udpPendingClientData.clientSalt ^ udpPendingClientData.serverSalt;
+
+                        if (challengeResponsePacket.Payload.result == serverResult)
+                        {
+                            AddClient(ipEndPoint);
+                            RemovePendingClient(ipEndPoint);
+                        }
                     }
+                    if (udpClientsIDs.ContainsKey(ipEndPoint))
+                        SendConnectionAccepted(udpClientsData[udpClientsIDs[ipEndPoint]]);
                 }
                 break;
         }
@@ -129,21 +147,21 @@ public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
         ConnectionRequestPacket connectionRequestPacket = new ConnectionRequestPacket();
         ConnectionRequestData connectionRequestData;
 
-        connectionRequestData.clientSalt = clientSalt;
+        connectionRequestData.clientSalt = saltGeneratedByClient;
         connectionRequestPacket.Payload = connectionRequestData;
 
         PacketsManager.Instance.SendPacket(connectionRequestPacket);
     }
 
-    void SendChallengeRequest(UdpClientData udpClientData)
+    void SendChallengeRequest(UdpPendingClientData udpPendingClientData)
     {
         ChallengeRequestPacket challengeRequestPacket = new ChallengeRequestPacket();
         ChallengeRequestData challengeRequestData;
 
-        challengeRequestData.generatedClientID = udpClientData.id;
-        challengeRequestData.serverSalt = udpClientData.serverSalt;
+        challengeRequestData.serverSalt = udpPendingClientData.serverSalt;
+        challengeRequestPacket.Payload = challengeRequestData;
 
-        PacketsManager.Instance.SendPacket(challengeRequestPacket);
+        PacketsManager.Instance.SendPacket(challengeRequestPacket, udpPendingClientData.ipEndPoint);
     }
 
     void SendChallengeResponse()
@@ -151,38 +169,58 @@ public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
         ChallengeResponsePacket challengeResponsePacket = new ChallengeResponsePacket();
         ChallengeResponseData challengeResponseData;
 
-        challengeResponseData.result = challengeResult;
+        challengeResponseData.result = challengeResultGeneratedByClient;
         challengeResponsePacket.Payload = challengeResponseData;
 
         PacketsManager.Instance.SendPacket(challengeResponsePacket);
     }
 
-    void SendConnectionAccepted()
+    void SendConnectionAccepted(UdpClientData udpClientData)
     {
         ConnectionAcceptedPacket connectionAcceptedPacket = new ConnectionAcceptedPacket();
         ConnectionAcceptedData connectionAcceptedData;
 
-        connectionAcceptedData.welcomeMessage = "You have been connected to the server successfuly.";
+        connectionAcceptedData.clientID = udpClientData.id;
         connectionAcceptedPacket.Payload = connectionAcceptedData;
 
-        PacketsManager.Instance.SendPacket(connectionAcceptedPacket);
+        PacketsManager.Instance.SendPacket(connectionAcceptedPacket, udpClientData.ipEndPoint);
     }
 
-    void AddClient(IPEndPoint ipEndPoint, long clientSalt)
+    void AddPendingClient(IPEndPoint ipEndPoint, long clientSalt)
+    {
+        UdpPendingClientData udpPendingClientData;
+        long serverSalt = GenerateSalt();
+
+        udpPendingClientData.ipEndPoint = ipEndPoint;
+        udpPendingClientData.clientSalt = clientSalt;
+        udpPendingClientData.serverSalt = serverSalt;
+
+        udpPendingClientsData.Add(ipEndPoint, udpPendingClientData);
+    }
+
+    void AddClient(IPEndPoint ipEndPoint)
     {
         UdpClientData udpClientData;
-        long serverSalt = GenerateSalt();
 
         udpClientData.ipEndPoint = ipEndPoint;
         udpClientData.id = ClientID;
         udpClientData.timestamp = Time.realtimeSinceStartup;
-        udpClientData.clientSalt = clientSalt;
-        udpClientData.serverSalt = serverSalt;
 
         udpClientsIDs.Add(ipEndPoint, ClientID);
         udpClientsData.Add(ClientID, udpClientData);
 
         ClientID++;
+    }
+
+    void RemovePendingClient(IPEndPoint ipEndPoint)
+    {
+        if (!udpPendingClientsData.ContainsKey(ipEndPoint))
+        {
+            Debug.LogWarning("Cannot remove the pending client because there are none with the given IP End Point.", gameObject);
+            return;
+        }
+
+        udpPendingClientsData.Remove(ipEndPoint);
     }
 
     void RemoveClient(IPEndPoint ipEndPoint)
@@ -193,13 +231,15 @@ public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
             return;
         }
 
+        udpClientsData.Remove(udpClientsIDs[ipEndPoint]);
         udpClientsIDs.Remove(ipEndPoint);
     }
 
-    public void ConnectToServer(IPAddress ipAddress, int port)
+    public void ConnectToServer(IPAddress ipAddress, int port, Action onClientConnectedCallback = null)
     {
+        this.onClientConnectedCallback = onClientConnectedCallback;
         UdpNetworkManager.Instance.StartClient(ipAddress, port);
-        clientSalt = GenerateSalt();
+        saltGeneratedByClient = GenerateSalt();
         clientConnectionState = ClientConnectionState.RequestingConnection;
     }
 

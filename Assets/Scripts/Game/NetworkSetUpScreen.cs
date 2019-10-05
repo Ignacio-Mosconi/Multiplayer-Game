@@ -36,6 +36,7 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
             TcpNetworkManager.Instance.StartServer(port);
         else
             UdpConnectionManager.Instance.CreateServer(port);  
+        
         MoveToChatScreen();
     }
 
@@ -47,8 +48,6 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             TcpNetworkManager.Instance.StartClient(ipAddress, port);
         else
-            UdpConnectionManager.Instance.ConnectToServer(ipAddress, port);
-
-        MoveToChatScreen();
+            UdpConnectionManager.Instance.ConnectToServer(ipAddress, port, MoveToChatScreen);
     }
 }

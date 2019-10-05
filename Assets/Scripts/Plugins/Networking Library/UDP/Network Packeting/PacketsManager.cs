@@ -91,12 +91,17 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
             packetReceptionCallbacks.Remove(objectID);
     }
 
-    public void SendPacket<T>(NetworkPacket<T> networkPacket, uint objectID = 0)
+    public void SendPacket<T>(NetworkPacket<T> networkPacket, IPEndPoint ipEndPoint = null, uint objectID = 0)
     {
         byte[] data = SerializePacket<T>(networkPacket, objectID);
 
         if (UdpNetworkManager.Instance.IsServer)
-            UdpNetworkManager.Instance.Broadcast(data);
+        {
+            if (ipEndPoint != null)
+                UdpNetworkManager.Instance.SendToClient(data, ipEndPoint);
+            else
+                UdpNetworkManager.Instance.Broadcast(data);
+        }
         else
             UdpNetworkManager.Instance.SendToServer(data);
     }

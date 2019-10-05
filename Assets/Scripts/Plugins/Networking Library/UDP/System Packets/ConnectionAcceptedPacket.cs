@@ -2,7 +2,7 @@ using System.IO;
 
 public struct ConnectionAcceptedData
 {
-    public string welcomeMessage;
+    public uint clientID;
 }
 
 public class ConnectionAcceptedPacket : NetworkPacket<ConnectionAcceptedData>
@@ -16,7 +16,7 @@ public class ConnectionAcceptedPacket : NetworkPacket<ConnectionAcceptedData>
     {
         BinaryWriter binaryWriter = new BinaryWriter(stream);
         
-        binaryWriter.Write(Payload.welcomeMessage);
+        binaryWriter.Write(Payload.clientID);
     }
     
     protected override void OnDeserialize(Stream stream)
@@ -24,7 +24,7 @@ public class ConnectionAcceptedPacket : NetworkPacket<ConnectionAcceptedData>
         BinaryReader binaryReader = new BinaryReader(stream);
         ConnectionAcceptedData connectionAcceptedData;
         
-        connectionAcceptedData.welcomeMessage= binaryReader.ReadString();
+        connectionAcceptedData.clientID = binaryReader.ReadUInt32();
         Payload = connectionAcceptedData;
     }
 }

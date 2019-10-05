@@ -5,7 +5,7 @@ public class UdpNetworkManager : NetworkManager
 {
     public IPAddress IPAddress { get; private set; }
     public int Port { get; private set; }
-
+    
     UdpConnection udpConnection;
 
     public static new UdpNetworkManager Instance
@@ -63,7 +63,7 @@ public class UdpNetworkManager : NetworkManager
 
     public override void StartClient(IPAddress ipAddress, int port)
     {
-        udpConnection = new UdpClientConnection(ipAddress, port, this);
+        udpConnection  = new UdpClientConnection(ipAddress, port, this);
         IsServer = false;
         Port = port;
         IPAddress = ipAddress;
@@ -75,6 +75,14 @@ public class UdpNetworkManager : NetworkManager
 
         if (udpClientConnection != null)
             udpClientConnection.Send(data);
+    }
+
+    public void SetClientID(uint clientID)
+    {
+        UdpClientConnection udpClientConnection = udpConnection as UdpClientConnection;
+
+        if (udpClientConnection != null)
+            udpClientConnection.ClientID = clientID;
     }
 
     #endregion

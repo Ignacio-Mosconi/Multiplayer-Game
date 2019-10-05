@@ -3,6 +3,8 @@ using System.Net.Sockets;
 
 public class UdpClientConnection : UdpConnection
 {
+    public uint ClientID { get; set; }
+
     public UdpClientConnection(IPAddress ipAddress, int port, IDataReceiver dataReceiver = null) : base(dataReceiver)
     {
         connection = new UdpClient();

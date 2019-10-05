@@ -2,7 +2,6 @@ using System.IO;
 
 public struct ChallengeRequestData
 {
-    public long generatedClientID;
     public long serverSalt;
 }
 
@@ -17,7 +16,6 @@ public class ChallengeRequestPacket : NetworkPacket<ChallengeRequestData>
     {
         BinaryWriter binaryWriter = new BinaryWriter(stream);
         
-        binaryWriter.Write(Payload.generatedClientID);
         binaryWriter.Write(Payload.serverSalt);
     }
     
@@ -26,7 +24,6 @@ public class ChallengeRequestPacket : NetworkPacket<ChallengeRequestData>
         BinaryReader binaryReader = new BinaryReader(stream);
         ChallengeRequestData challengeRequestData;
         
-        challengeRequestData.generatedClientID = binaryReader.ReadInt64();
         challengeRequestData.serverSalt = binaryReader.ReadInt64();
         Payload = challengeRequestData;
     }
