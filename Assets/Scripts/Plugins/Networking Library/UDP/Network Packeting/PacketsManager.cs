@@ -5,7 +5,7 @@ using System.Net;
 
 public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataReceiver
 {
-    Dictionary<uint, Action<ushort, Stream>> packetReceptionCallbacks = new Dictionary<uint, Action<ushort, Stream>>();
+    Dictionary<uint, Action<ushort, uint, Stream>> packetReceptionCallbacks = new Dictionary<uint, Action<ushort, uint, Stream>>();
     Action<ushort, IPEndPoint, Stream> packetReceptionCallback;
     uint currentPacketID = 0;
 
@@ -16,7 +16,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
         UdpNetworkManager.Instance.OnReceiveData += ReceiveData;
     }
 
-    byte[] SerializePacket<T>(NetworkPacket<T> networkPacket, uint objectID = 0)
+    byte[] SerializePacket<T>(NetworkPacket<T> networkPacket, uint senderID = 0, uint objectID = 0)
     {
         byte[] data = null;
 
@@ -34,7 +34,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
             UserPacketHeader userPacketHeader = new UserPacketHeader();
             
             userPacketHeader.PacketID = currentPacketID++;
-            userPacketHeader.SenderID = UdpConnectionManager.Instance.ClientID;
+            userPacketHeader.SenderID = senderID;
             userPacketHeader.ObjectID = objectID;
             userPacketHeader.UserPacketTypeIndex = userNetworkPacket.UserPacketTypeIndex;
             
@@ -63,10 +63,10 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
         }
     }
 
-    void InvokeReceptionCallback(uint objectID, ushort userPacketTypeIndex, Stream stream)
+    void InvokeReceptionCallback(uint objectID, ushort userPacketTypeIndex, uint senderID, Stream stream)
     {
         if (packetReceptionCallbacks.ContainsKey(objectID))
-            packetReceptionCallbacks[objectID].Invoke(userPacketTypeIndex, stream);
+            packetReceptionCallbacks[objectID].Invoke(userPacketTypeIndex, senderID, stream);
     }
 
     public void AddSystemPacketListener(Action<ushort, IPEndPoint, Stream> receptionCallback)
@@ -74,7 +74,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
         packetReceptionCallback = receptionCallback;
     }
 
-    public void AddUserPacketListener(uint objectID, Action<ushort, Stream> receptionCallback)
+    public void AddUserPacketListener(uint objectID, Action<ushort, uint, Stream> receptionCallback)
     {
         if (!packetReceptionCallbacks.ContainsKey(objectID))
             packetReceptionCallbacks.Add(objectID, receptionCallback);
@@ -91,9 +91,9 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
             packetReceptionCallbacks.Remove(objectID);
     }
 
-    public void SendPacket<T>(NetworkPacket<T> networkPacket, IPEndPoint ipEndPoint = null, uint objectID = 0)
+    public void SendPacket<T>(NetworkPacket<T> networkPacket, IPEndPoint ipEndPoint = null, uint senderID = 0, uint objectID = 0)
     {
-        byte[] data = SerializePacket<T>(networkPacket, objectID);
+        byte[] data = SerializePacket<T>(networkPacket, senderID, objectID);
 
         if (UdpNetworkManager.Instance.IsServer)
         {
@@ -115,7 +115,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
         DeserializePacket(data, out memoryStream, out packetHeader, ref userPacketHeader);
         
         if (userPacketHeader != null)
-            InvokeReceptionCallback(userPacketHeader.ObjectID, userPacketHeader.UserPacketTypeIndex, memoryStream);
+            InvokeReceptionCallback(userPacketHeader.ObjectID, userPacketHeader.UserPacketTypeIndex, userPacketHeader.SenderID, memoryStream);
 
         packetReceptionCallback?.Invoke(packetHeader.PacketTypeIndex, ipEndPoint, memoryStream);
 

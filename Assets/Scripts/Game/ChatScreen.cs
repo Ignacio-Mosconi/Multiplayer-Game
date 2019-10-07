@@ -10,7 +10,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
     [SerializeField] TextMeshProUGUI chatText = default;
     [SerializeField] TMP_InputField chatInputField = default;
 
-    void OnUdpPacketReceived(ushort userPacketTypeIndex, Stream stream)
+    void OnUdpPacketReceived(ushort userPacketTypeIndex, uint senderID, Stream stream)
     {
         if (userPacketTypeIndex != (ushort)UserPacketType.ChatMessage)
             return;
@@ -18,11 +18,18 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         ChatMessagePacket chatMessagePacket = new ChatMessagePacket();
 
         chatMessagePacket.Deserialize(stream);
+        
+        string senderDisplayName = chatMessagePacket.Payload.senderDisplayName;
+        string message = chatMessagePacket.Payload.message;
 
         if (UdpNetworkManager.Instance.IsServer)
-            ChatMessagesManager.Instance.SendChatMessage(chatMessagePacket.Payload, 0);
-
-        chatText.text += chatMessagePacket.Payload + Environment.NewLine;
+            ChatMessagesManager.Instance.SendChatMessage(senderDisplayName, message, senderID, 0);
+        
+        if (senderID != UdpNetworkManager.Instance.GetSenderID())
+        {
+            chatText.text += ChatMessagesManager.Instance.FormatOuterDisplayName(senderDisplayName);
+            chatText.text += ChatMessagesManager.Instance.FormatOuterMessage(message);
+        }
     }
 
     void OnTcpDataReceived(byte[] data, IPEndPoint ipEndPoint = null)
@@ -59,9 +66,9 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             }
             else
             {
-                if (UdpNetworkManager.Instance.IsServer)
-                    chatText.text += chatMessage + Environment.NewLine;
-                ChatMessagesManager.Instance.SendChatMessage(chatMessage, 0);
+                chatText.text += ChatMessagesManager.Instance.FormatOwnDisplayName();
+                chatText.text += ChatMessagesManager.Instance.FormatOwnMessage(chatMessage);
+                ChatMessagesManager.Instance.SendChatMessage(chatMessage, UdpNetworkManager.Instance.GetSenderID(), 0);
             }
 
             chatInputField.ActivateInputField();

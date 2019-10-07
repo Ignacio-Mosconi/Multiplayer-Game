@@ -28,7 +28,7 @@ public struct UdpPendingClientData
 
 public class UdpConnectionManager : ConnectionManager
 {
-    public uint ClientID { get; private set; }
+    public uint ClientID { get; private set; } = 1;
 
     Dictionary<IPEndPoint, uint> udpClientsIDs = new Dictionary<IPEndPoint, uint>();
     Dictionary<IPEndPoint, UdpPendingClientData> udpPendingClientsData = new Dictionary<IPEndPoint, UdpPendingClientData>();

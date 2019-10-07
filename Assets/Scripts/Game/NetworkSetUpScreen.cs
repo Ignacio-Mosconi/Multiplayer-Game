@@ -6,6 +6,7 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
 {
     [SerializeField] TMP_InputField addressInputField = default;
     [SerializeField] TMP_InputField portInputField = default;
+    [SerializeField] TMP_InputField displayNameInputField = default;
     [SerializeField] TMP_Dropdown protocolDropdown = default;
 
     ConnectionProtocol connectionProtocol;
@@ -34,6 +35,8 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
     {
         int port = System.Convert.ToInt32(portInputField.text);
 
+        ChatMessagesManager.Instance.UserDisplayName = displayNameInputField.text;
+
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             TcpConnectionManager.Instance.CreateServer(port);
         else
@@ -46,6 +49,8 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
     {
         IPAddress ipAddress = IPAddress.Parse(addressInputField.text);
         int port = System.Convert.ToInt32(portInputField.text);
+
+        ChatMessagesManager.Instance.UserDisplayName = displayNameInputField.text;
 
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             TcpConnectionManager.Instance.ConnectToServer(ipAddress, port, MoveToChatScreen);

@@ -77,6 +77,17 @@ public class UdpNetworkManager : NetworkManager
             udpClientConnection.Send(data);
     }
 
+    public uint GetSenderID()
+    {
+        uint clientID = 0;
+        UdpClientConnection udpClientConnection = udpConnection as UdpClientConnection;
+
+        if (udpClientConnection != null)
+            clientID = udpClientConnection.ClientID;
+
+        return clientID;
+    }
+
     public void SetClientID(uint clientID)
     {
         UdpClientConnection udpClientConnection = udpConnection as UdpClientConnection;
