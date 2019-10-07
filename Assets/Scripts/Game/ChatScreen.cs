@@ -10,30 +10,6 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
     [SerializeField] TextMeshProUGUI chatText = default;
     [SerializeField] TMP_InputField chatInputField = default;
 
-    protected override void Awake()
-    {
-        base.Awake();
-        gameObject.SetActive(false);
-    }
-
-    void Start()
-    {
-        chatText.text = "";
-
-        if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
-            NetworkManager.Instance.OnReceiveData += OnTcpDataReceived;
-        else
-            PacketsManager.Instance.AddUserPacketListener(0, OnUdpPacketReceived);
-    }
-
-    void OnDestroy()
-    {
-        if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
-            NetworkManager.Instance.OnReceiveData -= OnTcpDataReceived;            
-        else
-            PacketsManager.Instance.RemoveUserPacketListener(0);
-    }
-
     void OnUdpPacketReceived(ushort userPacketTypeIndex, Stream stream)
     {
         if (userPacketTypeIndex != (ushort)UserPacketType.ChatMessage)
@@ -55,6 +31,16 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             TcpNetworkManager.Instance.Broadcast(data);
 
         chatText.text += System.Text.Encoding.UTF8.GetString(data, 0, data.Length) + Environment.NewLine;
+    }
+
+    public void Initialize()
+    {
+        chatText.text = "";
+
+        if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
+            TcpNetworkManager.Instance.OnReceiveData += OnTcpDataReceived;
+        else
+            PacketsManager.Instance.AddUserPacketListener(0, OnUdpPacketReceived);
     }
 
     public void OnEndEditChatMessage(string chatMessage)

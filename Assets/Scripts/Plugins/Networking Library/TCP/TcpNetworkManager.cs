@@ -11,6 +11,8 @@ public class TcpNetworkManager : NetworkManager
     IPAddress serverIP;
     TcpListener tcpListener;
 
+    public event Action OnClientConnected;
+
     public static new TcpNetworkManager Instance
     {
         get
@@ -72,7 +74,13 @@ public class TcpNetworkManager : NetworkManager
         TcpClient tcpClient = new TcpClient();
         client = new TcpConnectedClient(tcpClient, this);
 
-        tcpClient.BeginConnect(serverIP, port, (ar) => client.OnEndConnection(ar), null);
+        tcpClient.BeginConnect(serverIP, port, OnClientConnect, null);
+    }
+
+    public void OnClientConnect(IAsyncResult asyncResult)
+    {
+        client.OnEndConnection(asyncResult);
+        OnClientConnected.Invoke();
     }
 
     public void OnClientDisconnect(TcpConnectedClient client)

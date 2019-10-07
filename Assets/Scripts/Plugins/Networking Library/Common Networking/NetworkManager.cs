@@ -13,22 +13,6 @@ public abstract class NetworkManager : MonoBehaviourSingleton<NetworkManager>, I
     public Action<byte[], IPEndPoint> OnReceiveData;
     public bool IsServer { get; protected set; }
 
-    public static new NetworkManager Instance
-    {
-        get
-        {
-            if (!instance)
-            {
-                if (ConnectionProtocol == ConnectionProtocol.TCP)
-                    instance = TcpNetworkManager.Instance;
-                else
-                    instance = UdpNetworkManager.Instance;
-            }
-
-            return instance;
-        }
-    }
-
     public virtual void ReceiveData(byte[] data, IPEndPoint ipEndPoint = null)
     {
         if (OnReceiveData != null)

@@ -26,17 +26,32 @@ public struct UdpPendingClientData
     public long serverSalt;
 }
 
-public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
+public class UdpConnectionManager : ConnectionManager
 {
     public uint ClientID { get; private set; }
 
     Dictionary<IPEndPoint, uint> udpClientsIDs = new Dictionary<IPEndPoint, uint>();
     Dictionary<IPEndPoint, UdpPendingClientData> udpPendingClientsData = new Dictionary<IPEndPoint, UdpPendingClientData>();
     Dictionary<uint, UdpClientData> udpClientsData = new Dictionary<uint, UdpClientData>();
-    Action onClientConnectedCallback;
     ClientConnectionState clientConnectionState = ClientConnectionState.Idle;
     long saltGeneratedByClient;
     long challengeResultGeneratedByClient;
+
+    public static new UdpConnectionManager Instance
+    {
+        get
+        {
+            if (!instance)
+                instance = FindObjectOfType<UdpConnectionManager>();
+            if (!instance)
+            {
+                GameObject gameObject = new GameObject(typeof(UdpConnectionManager).Name);
+                instance = gameObject.AddComponent<UdpConnectionManager>();
+            }
+
+            return instance as UdpConnectionManager;
+        }
+    }
 
     void Start()
     {
@@ -235,17 +250,17 @@ public class UdpConnectionManager : MonoBehaviourSingleton<UdpConnectionManager>
         udpClientsIDs.Remove(ipEndPoint);
     }
 
-    public void ConnectToServer(IPAddress ipAddress, int port, Action onClientConnectedCallback = null)
+    public override void CreateServer(int port)
+    {
+        UdpNetworkManager.Instance.StartServer(port);
+    }
+
+    public override void ConnectToServer(IPAddress ipAddress, int port, Action onClientConnectedCallback = null)
     {
         this.onClientConnectedCallback = onClientConnectedCallback;
         UdpNetworkManager.Instance.StartClient(ipAddress, port);
         saltGeneratedByClient = GenerateSalt();
         clientConnectionState = ClientConnectionState.RequestingConnection;
-    }
-
-    public void CreateServer(int port)
-    {
-        UdpNetworkManager.Instance.StartServer(port);
     }
 
     public List<IPEndPoint> ClientsIPs

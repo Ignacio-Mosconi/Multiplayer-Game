@@ -12,14 +12,16 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
 
     void Start()
     {
+        ChatScreen.Instance.gameObject.SetActive(false);
         ChangeNetworkProtocol(protocolDropdown.value);
         protocolDropdown.onValueChanged.AddListener(ChangeNetworkProtocol);
     }
 
     void MoveToChatScreen()
     {
-        ChatScreen.Instance.gameObject.SetActive(true);
         gameObject.SetActive(false);
+        ChatScreen.Instance.gameObject.SetActive(true);
+        ChatScreen.Instance.Initialize();
     }
 
     void ChangeNetworkProtocol(int value)
@@ -33,7 +35,7 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
         int port = System.Convert.ToInt32(portInputField.text);
 
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
-            TcpNetworkManager.Instance.StartServer(port);
+            TcpConnectionManager.Instance.CreateServer(port);
         else
             UdpConnectionManager.Instance.CreateServer(port);  
         
@@ -46,7 +48,7 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
         int port = System.Convert.ToInt32(portInputField.text);
 
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
-            TcpNetworkManager.Instance.StartClient(ipAddress, port);
+            TcpConnectionManager.Instance.ConnectToServer(ipAddress, port, MoveToChatScreen);
         else
             UdpConnectionManager.Instance.ConnectToServer(ipAddress, port, MoveToChatScreen);
     }
