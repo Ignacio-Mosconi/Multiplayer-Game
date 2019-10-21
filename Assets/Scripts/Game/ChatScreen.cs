@@ -47,7 +47,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             TcpNetworkManager.Instance.OnReceiveData += OnTcpDataReceived;
         else
-            PacketsManager.Instance.AddUserPacketListener(0, OnUdpPacketReceived);
+            PacketReliabilityManager.Instance.AddUserPacketListener(0, OnUdpPacketReceived);
     }
 
     public void OnEndEditChatMessage(string chatMessage)
