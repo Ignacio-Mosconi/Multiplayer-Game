@@ -23,7 +23,9 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
 
     void Update()
     {
-
+        using (var iterator = packetDataPendingAck.GetEnumerator())
+            while (iterator.MoveNext())
+                SendDataToDestination(iterator.Current.Value.packetData, iterator.Current.Value.ipEndPoint);
     }
 
     byte[] SerializeReliablePacket(byte[] data, out uint packetID)
@@ -112,43 +114,50 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
             ReliablePacket reliablePacket = DeserializeReliablePacket(stream);
 
             acknowledge = reliablePacket.PacketID;
-            ackBits = 0;
+            ackBits >>= 1;
 
-            for (int i = 0; i < Marshal.SizeOf(ackBits); i++)
-                if (receivedPacketIDs.Contains((uint)(acknowledge - 1 - i)))
-                    ackBits += (uint)Math.Pow(2, i);
+            receivedPacketIDs.Insert((int)(acknowledge % Marshal.SizeOf(acknowledge)), acknowledge);
 
-            if (receivedPacketIDs.Count == Marshal.SizeOf(ackBits))
-                receivedPacketIDs.RemoveAt(receivedPacketIDs.Count - 1);
+            // |= operator!
 
-            receivedPacketIDs.Insert(0, acknowledge);
-            receivedPacketIDs.Sort((a, b) => -a.CompareTo(b));
+            // for (int i = 0; i < Marshal.SizeOf(ackBits); i++)
+            //     if (receivedPacketIDs.Contains((uint)(acknowledge - 1 - i)))
+            //         ackBits += (uint)Math.Pow(2, i);
+
+            // if (receivedPacketIDs.Count == Marshal.SizeOf(ackBits))
+            //     receivedPacketIDs.RemoveAt(receivedPacketIDs.Count - 1);
+
+            // receivedPacketIDs.Insert(0, acknowledge);
+            // receivedPacketIDs.Sort((a, b) => -a.CompareTo(b));
 
             if (reliablePacket.Acknowledge >= nextExpectedID)
             {
                 if (reliablePacket.Acknowledge == nextExpectedID)
-                {                    
-                    char[] binaryRepresentation = Convert.ToString(reliablePacket.AckBits, 2).ToCharArray();
-
-                    for (int i = 0; i < binaryRepresentation.Length; i++)
-                        if (binaryRepresentation[binaryRepresentation.Length - 1 - i] == '1')
+                {
+                    int i = 1;
+                    uint n = reliablePacket.AckBits;
+                    
+                    do
+                    {
+                        if ((n <<= 1 & 0) != 0)
                         {
-                            uint packetID = (uint)(nextExpectedID - 1 - i);
+                            uint packetID = (uint)(reliablePacket.Acknowledge - i);
 
                             if (packetDataPendingAck.ContainsKey(packetID))
                                 packetDataPendingAck.Remove(packetID);
                         }
+                        i++;
+                    } while (n != 0);
 
                     packetDataPendingAck.Remove(nextExpectedID);
                     nextExpectedID++;
                 }
                 else
                     packetsWaitingPreviousAck.Add(reliablePacket.Acknowledge, reliablePacket);
-
-                SendUnacknowledgedPacketData();
             }
         }
         else
-            InvokeReceptionCallback(userPacketHeader.ObjectID, userPacketHeader.UserPacketTypeIndex, userPacketHeader.SenderID, stream);
+            InvokeReceptionCallback(userPacketHeader.ObjectID, userPacketHeader.UserPacketTypeIndex, 
+                                    userPacketHeader.SenderID, stream);
     }
 }
