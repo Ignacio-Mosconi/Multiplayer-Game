@@ -10,7 +10,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
     [SerializeField] TextMeshProUGUI chatText = default;
     [SerializeField] TMP_InputField chatInputField = default;
 
-    void OnUdpPacketReceived(ushort userPacketTypeIndex, uint senderID, Stream stream)
+    void OnUdpDataReceived(ushort userPacketTypeIndex, uint senderID, Stream stream)
     {
         if (userPacketTypeIndex != (ushort)UserPacketType.ChatMessage)
             return;
@@ -47,7 +47,7 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
             TcpNetworkManager.Instance.OnReceiveData += OnTcpDataReceived;
         else
-            PacketReliabilityManager.Instance.AddUserPacketListener(0, OnUdpPacketReceived);
+            PacketsManager.Instance.AddUserPacketListener(0, OnUdpDataReceived);
     }
 
     public void OnEndEditChatMessage(string chatMessage)

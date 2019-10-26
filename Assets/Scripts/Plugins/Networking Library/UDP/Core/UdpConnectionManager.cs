@@ -28,6 +28,7 @@ public struct UdpPendingClientData
 
 public class UdpConnectionManager : ConnectionManager
 {
+    public Action<uint> OnClientAddedByServer { get; set; }
     public uint ClientID { get; private set; } = 1;
 
     Dictionary<IPEndPoint, uint> udpClientsIDs = new Dictionary<IPEndPoint, uint>();
@@ -151,7 +152,10 @@ public class UdpConnectionManager : ConnectionManager
                         }
                     }
                     if (udpClientsIDs.ContainsKey(ipEndPoint))
+                    {
                         SendConnectionAccepted(udpClientsData[udpClientsIDs[ipEndPoint]]);
+                        OnClientAddedByServer?.Invoke(udpClientsIDs[ipEndPoint]);
+                    }
                 }
                 break;
         }
@@ -263,6 +267,37 @@ public class UdpConnectionManager : ConnectionManager
         clientConnectionState = ClientConnectionState.RequestingConnection;
     }
 
+    public IPEndPoint GetClientIP(uint id)
+    {
+        IPEndPoint ipEndPoint = null;
+
+        if (udpClientsIDs.ContainsValue(id))
+        {
+            foreach (KeyValuePair<IPEndPoint, uint> pair in udpClientsIDs)
+                if (EqualityComparer<uint>.Default.Equals(pair.Value, id))
+                {
+                    ipEndPoint = pair.Key;
+                    break;
+                }
+        }
+        else
+            Debug.LogWarning("Attempted to get the IP of an inexistent client.", gameObject);
+
+        return ipEndPoint;
+    }
+
+    public uint GetClientID(IPEndPoint ipEndPoint)
+    {
+        uint clientID = 0;
+
+        if (udpClientsIDs.ContainsKey(ipEndPoint))
+            clientID = udpClientsIDs[ipEndPoint];
+        else
+            Debug.LogWarning("Attempted to get the ID of a not-registered IP.", gameObject);
+
+        return clientID;
+    }
+
     public List<IPEndPoint> ClientsIPs
     {
         get
@@ -270,6 +305,16 @@ public class UdpConnectionManager : ConnectionManager
             List<IPEndPoint> clientIPs = new List<IPEndPoint>(udpClientsIDs.Keys);
             
             return clientIPs;
+        }
+    }
+
+    public List<uint> ClientsIDs
+    {
+        get
+        {
+            List<uint> clientIDs = new List<uint>(udpClientsIDs.Values);
+            
+            return clientIDs;
         }
     }
 }

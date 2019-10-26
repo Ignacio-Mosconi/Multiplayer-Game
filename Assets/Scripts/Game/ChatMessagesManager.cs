@@ -24,7 +24,7 @@ public class ChatMessagesManager : MonoBehaviourSingleton<ChatMessagesManager>
         chatMessageData.senderDisplayName = UserDisplayName;
         chatMessageData.message = message;
         chatMessagePacket.Payload = chatMessageData;
-        PacketsManager.Instance.SendPacket(chatMessagePacket, null, senderID, objectID);
+        PacketsManager.Instance.SendPacket(chatMessagePacket, null, senderID, objectID, reliable: true);
     }
 
     public void SendChatMessage(string senderDisplayName, string message, uint senderID, uint objectID)
@@ -35,7 +35,7 @@ public class ChatMessagesManager : MonoBehaviourSingleton<ChatMessagesManager>
         chatMessageData.senderDisplayName = senderDisplayName;
         chatMessageData.message = message;
         chatMessagePacket.Payload = chatMessageData;
-        PacketsManager.Instance.SendPacket(chatMessagePacket, null, senderID, objectID);
+        PacketsManager.Instance.SendPacket(chatMessagePacket, null, senderID, objectID, reliable: true);
     }
 
     public string FormatOwnDisplayName()
