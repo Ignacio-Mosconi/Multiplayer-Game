@@ -1,13 +1,21 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Linq;
 using System.Collections.Generic;
 
 public struct PacketPendingAck
 {
     public uint recipientID;
-    public uint packetID;
+    public int packetID;
     public byte[] packetData;
+
+    public void Reset()
+    {
+        recipientID = default;
+        packetID = default;
+        packetData = default;
+    }
 }
 
 public struct PacketPendingProcess
@@ -16,17 +24,25 @@ public struct PacketPendingProcess
     public UserPacketHeader userPacketHeader;
     public Stream stream;
     public Action<ushort, uint, Stream> receptionCallback;
+
+    public void Reset()
+    {
+        reliablePacketHeader = default;
+        userPacketHeader = default;
+        stream = default;
+        receptionCallback = default;
+    }
 }
 
 public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliabilityManager>
 {
-    Dictionary<uint, List<PacketPendingAck>> packetsPendingAck = new Dictionary<uint, List<PacketPendingAck>>();
-    Dictionary<uint, List<PacketPendingProcess>> packetsPendingProcess = new Dictionary<uint, List<PacketPendingProcess>>();
-    Dictionary<uint, List<uint>> receivedPacketIDs = new Dictionary<uint, List<uint>>();
-    Dictionary<uint, uint> nextExpectedIDs = new Dictionary<uint, uint>();
-    Dictionary<uint, uint> acknowledges = new Dictionary<uint, uint>();
-    Dictionary<uint, uint> ackBits = new Dictionary<uint, uint>();
-    uint currentPacketID = 0;
+    Dictionary<uint, PacketPendingAck[]> packetsPendingAck = new Dictionary<uint, PacketPendingAck[]>();
+    Dictionary<uint, PacketPendingProcess[]> packetsPendingProcess = new Dictionary<uint, PacketPendingProcess[]>();
+    Dictionary<uint, int[]> receivedPacketIDs = new Dictionary<uint, int[]>();
+    Dictionary<uint, int> nextExpectedIDs = new Dictionary<uint, int>();
+    Dictionary<uint, int> acknowledges = new Dictionary<uint, int>();
+    Dictionary<uint, int> ackBits = new Dictionary<uint, int>();
+    int currentPacketID = 0;
 
     const int AckBitsCount = sizeof(uint) * 8;
 
@@ -34,32 +50,26 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
     {
         using (var dicIterator = packetsPendingAck.GetEnumerator())
             while (dicIterator.MoveNext())
-                using (var listIterator = dicIterator.Current.Value.GetEnumerator())
-                    while (listIterator.MoveNext())
-                        SendDataToDestination(listIterator.Current.packetData, listIterator.Current.recipientID);
+                foreach (PacketPendingAck packetPendingAck in dicIterator.Current.Value)
+                    if (packetPendingAck.packetData != null)
+                        SendDataToDestination(packetPendingAck.packetData, packetPendingAck.recipientID);
+
     }
 
-    void AddClientEntry(uint clientID)
+    void AddEntry(uint id = 0)
     {
-        if (packetsPendingAck.ContainsKey(clientID))
+        if (packetsPendingAck.ContainsKey(id))
             return;
 
-        packetsPendingAck.Add(clientID, new List<PacketPendingAck>(AckBitsCount));
-        packetsPendingProcess.Add(clientID, new List<PacketPendingProcess>(AckBitsCount));
-        receivedPacketIDs.Add(clientID, new List<uint>(AckBitsCount));
-        nextExpectedIDs.Add(clientID, 0);
-        acknowledges.Add(clientID, 0);
-        ackBits.Add(clientID, 0);
-    }
+        packetsPendingAck.Add(id, new PacketPendingAck[AckBitsCount]);
+        packetsPendingProcess.Add(id, new PacketPendingProcess[AckBitsCount]);
+        receivedPacketIDs.Add(id, new int[AckBitsCount]);
+        nextExpectedIDs.Add(id, 0);
+        acknowledges.Add(id, -Int32.MaxValue);
+        ackBits.Add(id, 0);
 
-    void SetUpClient()
-    {
-        packetsPendingAck.Add(0, new List<PacketPendingAck>(AckBitsCount));
-        packetsPendingProcess.Add(0, new List<PacketPendingProcess>(AckBitsCount));
-        receivedPacketIDs.Add(0, new List<uint>(AckBitsCount));
-        nextExpectedIDs.Add(0, 0);
-        acknowledges.Add(0, 0);
-        ackBits.Add(0, 0);
+        for (int i = 0; i < AckBitsCount; i++)
+            receivedPacketIDs[id][i] = -Int32.MaxValue;
     }
 
     void SendDataToDestination(byte[] dataToSend, uint recipientID = 0)
@@ -73,21 +83,69 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
             UdpNetworkManager.Instance.SendToServer(dataToSend);
     }
 
+    void UpdateAcknoledgeBits(uint senderID)
+    {
+        ackBits[senderID] = 0;
+
+        for (int i = AckBitsCount - 1; i >= 0; i--)
+            if (receivedPacketIDs[senderID].Contains(acknowledges[senderID] - i - 1))
+                ackBits[senderID] |= 1 << i;
+    }
+
+    void ProcessPendingPackets(PacketPendingProcess[] pendingPackets)
+    {
+        for (int i = 0; i < pendingPackets.Length; i++)
+        {
+            PacketPendingProcess packet = pendingPackets[i];
+
+            packet.receptionCallback(packet.userPacketHeader.UserPacketTypeIndex, packet.userPacketHeader.SenderID, packet.stream);
+            packet.Reset();
+        }
+    }
+
+    void ProcessReceivedAcknowledgeInfo(ReliablePacketHeader reliablePacketHeader, uint senderID)
+    {
+        int ackBits = reliablePacketHeader.AckBits;
+        int pendingIndex = -1;
+        int i = 1;
+
+        do
+        {
+            if ((ackBits & 0) != 0)
+            {
+                int packetID = reliablePacketHeader.Acknowledge - i;
+
+                pendingIndex = Array.FindIndex(packetsPendingAck[senderID], ppa => ppa.packetID == reliablePacketHeader.Acknowledge);
+
+                if (pendingIndex != -1)
+                    packetsPendingAck[senderID][pendingIndex].Reset();
+            }
+            ackBits >>= 1;
+            i++;
+        } while (ackBits != 0);
+
+        pendingIndex = -1;
+        pendingIndex = Array.FindIndex(packetsPendingAck[senderID], ppa => ppa.packetID == reliablePacketHeader.Acknowledge);
+
+        if (pendingIndex != -1)
+            packetsPendingAck[senderID][pendingIndex].Reset();
+    }
+
     public void SetUpReliabilitySystem()
     {
         if (UdpNetworkManager.Instance.IsServer)
         {
             foreach (uint clientID in UdpConnectionManager.Instance.ClientsIDs)
-                AddClientEntry(clientID);
-            UdpConnectionManager.Instance.OnClientAddedByServer += AddClientEntry;
+                AddEntry(clientID);
+            UdpConnectionManager.Instance.OnClientAddedByServer += AddEntry;
         }
         else
-            SetUpClient();
+            AddEntry();
     }
 
     public void SendPacket<T>(NetworkPacket<T> networkPacket, uint senderID, uint objectID)
     {
-        uint packetID = currentPacketID++;
+        int packetID = currentPacketID++;
 
         foreach (uint recipientID in packetsPendingAck.Keys)
         {
@@ -106,81 +164,44 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
             packetPendingAck.packetID = packetID;
             packetPendingAck.packetData = dataToSend;
 
-            packetsPendingAck[recipientID].Add(packetPendingAck);
+            packetsPendingAck[recipientID][packetID % AckBitsCount] = packetPendingAck;
             SendDataToDestination(dataToSend, recipientID);
         }
     }
 
-    public void ProcessReceivedStream(Stream stream, UserPacketHeader userPacketHeader, 
-                                        ReliablePacketHeader reliablePacketHeader, Action<ushort, uint, Stream> processCallback)
+    public void ProcessReceivedStream(Stream stream, UserPacketHeader userPacketHeader, ReliablePacketHeader reliablePacketHeader,
+                                        Action<ushort, uint, Stream> processCallback)
     {
         uint senderID = (UdpNetworkManager.Instance.IsServer) ? userPacketHeader.SenderID : 0;
-        int i = 0;
-
-        acknowledges[senderID] = reliablePacketHeader.PacketID;
-        ackBits[senderID] = 0;
-
-        for (i = AckBitsCount - 1; i >= 0; i--)
-            if (receivedPacketIDs[senderID].Contains((uint)(acknowledges[senderID] - i - 1)))
-                ackBits[senderID] |= (uint)(1 << i);
-
-        receivedPacketIDs[senderID].Add(acknowledges[senderID]);
-        if (receivedPacketIDs[senderID].Count > AckBitsCount)
-            receivedPacketIDs[senderID].RemoveAt(0);
-
+        
         if (reliablePacketHeader.PacketID >= nextExpectedIDs[senderID])
         {
+            acknowledges[senderID] = reliablePacketHeader.PacketID;
+            UpdateAcknoledgeBits(senderID);
+            receivedPacketIDs[senderID][reliablePacketHeader.PacketID % AckBitsCount] = acknowledges[senderID];
+
             if (reliablePacketHeader.PacketID == nextExpectedIDs[senderID])
             {
-                nextExpectedIDs[senderID] += (uint)packetsPendingProcess[senderID].Count + 1;
+                PacketPendingProcess[] pendingPackets = Array.FindAll(packetsPendingProcess[senderID], ppp => ppp.stream != null);
+                
+                nextExpectedIDs[senderID] += pendingPackets.Length + 1;
 
                 processCallback(userPacketHeader.UserPacketTypeIndex, userPacketHeader.SenderID, stream);
-                
-                foreach (PacketPendingProcess packet in packetsPendingProcess[senderID])
-                    packet.receptionCallback(packet.userPacketHeader.UserPacketTypeIndex, packet.userPacketHeader.SenderID, packet.stream);
-                
-                packetsPendingProcess[senderID].Clear();
+                ProcessPendingPackets(pendingPackets);
             }
             else
             {
-                PacketPendingProcess reliablePacketPendingProcess;
+                PacketPendingProcess packetPendingProcess;
 
-                reliablePacketPendingProcess.reliablePacketHeader = reliablePacketHeader;
-                reliablePacketPendingProcess.userPacketHeader = userPacketHeader;
-                reliablePacketPendingProcess.stream = stream;
-                reliablePacketPendingProcess.receptionCallback = processCallback;
+                packetPendingProcess.reliablePacketHeader = reliablePacketHeader;
+                packetPendingProcess.userPacketHeader = userPacketHeader;
+                packetPendingProcess.stream = stream;
+                packetPendingProcess.receptionCallback = processCallback;
 
-                packetsPendingProcess[senderID].Add(reliablePacketPendingProcess);
-                if (packetsPendingProcess[senderID].Count > AckBitsCount)
-                    packetsPendingProcess[senderID].RemoveAt(0);
+                packetsPendingProcess[senderID][packetPendingProcess.reliablePacketHeader.PacketID % AckBitsCount] = packetPendingProcess;
             }
+
+            ProcessReceivedAcknowledgeInfo(reliablePacketHeader, senderID);
         }
-
-        PacketPendingAck packetPendingAck;
-        uint n = reliablePacketHeader.AckBits;
-        
-        i = 1;
-
-        do
-        {
-            if ((n <<= 1 & 0) != 0)
-            {
-                uint packetID = (uint)(reliablePacketHeader.Acknowledge - i);
-
-                packetPendingAck = packetsPendingAck[senderID].Find(ppa => ppa.packetID == packetID);
-                
-                if (packetPendingAck.packetData != null)
-                {
-                    packetsPendingAck[senderID].Remove(packetPendingAck);
-                    packetPendingAck.packetData = null;
-                }
-            }
-            i++;    
-        } while (n != 0);
-
-        packetPendingAck = packetsPendingAck[senderID].Find(ppa => ppa.packetID == reliablePacketHeader.Acknowledge);
-        
-        if (packetPendingAck.packetData != null)
-            packetsPendingAck[senderID].Remove(packetPendingAck);
     }
 }

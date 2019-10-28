@@ -2,9 +2,9 @@ using System.IO;
 
 public class ReliablePacketHeader : ISerializablePacket
 {
-    public uint PacketID { get; set; }
-    public uint Acknowledge { get; set; }
-    public uint AckBits { get; set; }
+    public int PacketID { get; set; }
+    public int Acknowledge { get; set; }
+    public int AckBits { get; set; }
 
     public void Serialize(Stream stream)
     {
@@ -19,8 +19,8 @@ public class ReliablePacketHeader : ISerializablePacket
     {
         BinaryReader binaryReader = new BinaryReader(stream);
 
-        PacketID = binaryReader.ReadUInt32();
-        Acknowledge = binaryReader.ReadUInt32();
-        AckBits = binaryReader.ReadUInt32();
+        PacketID = binaryReader.ReadInt32();
+        Acknowledge = binaryReader.ReadInt32();
+        AckBits = binaryReader.ReadInt32();
     }
 }
