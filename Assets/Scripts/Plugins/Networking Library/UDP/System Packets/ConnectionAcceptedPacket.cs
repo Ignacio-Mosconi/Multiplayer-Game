@@ -1,5 +1,5 @@
 using System.IO;
-
+using System.Collections.Generic;
 public struct ConnectionAcceptedData
 {
     public uint clientID;
@@ -9,7 +9,6 @@ public class ConnectionAcceptedPacket : NetworkPacket<ConnectionAcceptedData>
 {
     public ConnectionAcceptedPacket() : base((ushort)PacketType.ConnectionAccepted)
     {
-
     }
 
     protected override void OnSerialize(Stream stream)
