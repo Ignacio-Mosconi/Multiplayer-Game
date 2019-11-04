@@ -1908,6 +1908,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4467b7d1348fe944bba9a06a2ce3c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  scrollRect: {fileID: 1840803014}
   chatText: {fileID: 973058839}
   chatInputField: {fileID: 1719707478}
 --- !u!1 &519420028
@@ -3281,7 +3282,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0.000048949983}
   m_SizeDelta: {x: 600, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &973058839

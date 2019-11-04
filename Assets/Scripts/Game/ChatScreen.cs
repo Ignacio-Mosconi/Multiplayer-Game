@@ -3,10 +3,12 @@ using System.Text;
 using System.IO;
 using System.Net;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
 {
+    [SerializeField] ScrollRect scrollRect = default;
     [SerializeField] TextMeshProUGUI chatText = default;
     [SerializeField] TMP_InputField chatInputField = default;
 
@@ -30,6 +32,8 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             chatText.text += ChatMessagesManager.Instance.FormatOuterDisplayName(senderDisplayName);
             chatText.text += ChatMessagesManager.Instance.FormatOuterMessage(message);
         }
+
+        UpdateScrollRect();
     }
 
     void OnTcpDataReceived(byte[] data, IPEndPoint ipEndPoint = null)
@@ -38,6 +42,14 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             TcpNetworkManager.Instance.Broadcast(data);
 
         chatText.text += System.Text.Encoding.UTF8.GetString(data, 0, data.Length) + Environment.NewLine;
+
+        UpdateScrollRect();
+    }
+
+    void UpdateScrollRect()
+    {
+        Canvas.ForceUpdateCanvases();
+        scrollRect.verticalNormalizedPosition = 0f;
     }
 
     public void Initialize()
@@ -74,6 +86,8 @@ public class ChatScreen : MonoBehaviourSingleton<ChatScreen>
             chatInputField.ActivateInputField();
             chatInputField.Select();
             chatInputField.text = "";
+
+            UpdateScrollRect();
         }
     }
 }
