@@ -151,6 +151,7 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
         else
             systemPacketReceptionCallback?.Invoke(packetHeader.PacketTypeIndex, ipEndPoint, memoryStream);
 
-        memoryStream.Close();
+        if (userPacketHeader == null || !userPacketHeader.Reliable)
+            memoryStream.Close();
     }
 }

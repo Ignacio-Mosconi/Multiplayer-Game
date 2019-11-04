@@ -3,7 +3,7 @@ using System.Net;
 
 public enum ConnectionProtocol
 {
-    TCP, UDP
+    UDP, TCP
 }
 
 public abstract class NetworkManager : MonoBehaviourSingleton<NetworkManager>, IDataReceiver
