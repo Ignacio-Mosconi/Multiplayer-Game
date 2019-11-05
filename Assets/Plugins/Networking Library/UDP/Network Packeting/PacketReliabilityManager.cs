@@ -103,7 +103,7 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
 
         do
         {
-            if ((ackBits & 0) != 0)
+            if ((ackBits & 1) != 0)
             {
                 pendingIndex = Array.FindIndex(packetsPendingAck[senderID], ppa => ppa.packetID == reliablePacketHeader.Acknowledge);
 

@@ -2,6 +2,12 @@
 using UnityEngine;
 using TMPro;
 
+public enum UserPacketType
+{
+    ChatMessage,
+    Transform
+}
+
 public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
 {
     [SerializeField] TMP_InputField addressInputField = default;

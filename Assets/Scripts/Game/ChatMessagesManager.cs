@@ -1,10 +1,5 @@
 ﻿using System;
 
-public enum UserPacketType
-{
-    ChatMessage
-}
-
 public class ChatMessagesManager : MonoBehaviourSingleton<ChatMessagesManager>
 {
     public string UserDisplayName { get; set; }
