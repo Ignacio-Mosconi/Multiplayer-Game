@@ -1,5 +1,5 @@
 using System.IO;
-using System.Collections.Generic;
+
 public struct ConnectionAcceptedData
 {
     public uint clientID;

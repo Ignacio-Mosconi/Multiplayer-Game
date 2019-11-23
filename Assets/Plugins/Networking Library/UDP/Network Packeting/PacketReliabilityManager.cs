@@ -162,7 +162,8 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
     public void ProcessReceivedStream(Stream stream, UserPacketHeader userPacketHeader, ReliablePacketHeader reliablePacketHeader,
                                         Action<ushort, uint, Stream> processCallback)
     {
-        if (UnityEngine.Random.Range(0, 100) < 99)
+        // 75% Chance of Packet Loss Simulation
+        if (UnityEngine.Random.Range(0, 100) < 75)
             return;
 
         uint senderID = (UdpNetworkManager.Instance.IsServer) ? userPacketHeader.SenderID : 0;
