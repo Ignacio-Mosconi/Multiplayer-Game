@@ -30,23 +30,21 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
                                 ref UserPacketHeader userPacketHeader, ref ReliablePacketHeader reliablePacketHeader)
     {
         bool isFaultless;
-
+        
+        PacketWrapper packetWrapper = new PacketWrapper();
+        
         memoryStream = new MemoryStream(data);
         packetHeader = new PacketHeader();
 
-        BinaryReader binaryReader = new BinaryReader(memoryStream);
-        uint crc = binaryReader.ReadUInt32();
-        byte[] packetData = new byte[memoryStream.Length - memoryStream.Position];
-
-        Array.Copy(data, Marshal.SizeOf(crc), packetData, 0, packetData.Length);
+        packetWrapper.Deserialize(memoryStream);
 
         memoryStream.Close();
 
-        isFaultless = crcCalculator.PerformCrcCheck(packetData, crc);
+        isFaultless = crcCalculator.PerformCrcCheck(packetWrapper.PacketData, packetWrapper.Crc);
 
         if (isFaultless)
         {
-            memoryStream = new MemoryStream(packetData);
+            memoryStream = new MemoryStream(packetWrapper.PacketData);
 
             packetHeader.Deserialize(memoryStream);
 
@@ -71,15 +69,14 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
     {
         byte[] data = null;
 
-        MemoryStream dataStream = new MemoryStream();
-        MemoryStream fullStream = new MemoryStream();
-        BinaryWriter binaryWriter = new BinaryWriter(fullStream);
+        PacketWrapper packetWrapper = new PacketWrapper();
+        MemoryStream memoryStream = new MemoryStream();
         PacketHeader packetHeader = new PacketHeader();
         
         packetHeader.ProtocolID = ProtocolID;
         packetHeader.PacketTypeIndex = networkPacket.PacketTypeIndex;
 
-        packetHeader.Serialize(dataStream);
+        packetHeader.Serialize(memoryStream);
 
         if ((PacketType)networkPacket.PacketTypeIndex == PacketType.User)
         {
@@ -91,31 +88,26 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
             userPacketHeader.ObjectID = objectID;
             userPacketHeader.Reliable = (reliablePacketHeader != null);
             
-            userPacketHeader.Serialize(dataStream);
+            userPacketHeader.Serialize(memoryStream);
 
             if (reliablePacketHeader != null)
-                reliablePacketHeader.Serialize(dataStream);
+                reliablePacketHeader.Serialize(memoryStream);
         }
 
-        networkPacket.Serialize(dataStream);
+        networkPacket.Serialize(memoryStream);
+        memoryStream.Close();
 
-        long previousMemoryPosition = dataStream.Position;
+        data = memoryStream.ToArray();
         
-        dataStream.Position = 0;
-        fullStream.Position = sizeof(uint);
+        packetWrapper.Crc = crcCalculator.ComputeCrc32(data);
+        packetWrapper.PacketData = data;
 
-        dataStream.CopyTo(fullStream);
+        memoryStream = new MemoryStream();
 
-        fullStream.Position = 0;
+        packetWrapper.Serialize(memoryStream);
+        memoryStream.Close();
         
-        dataStream.Close();
-        data = dataStream.ToArray();
-
-        uint crc = crcCalculator.ComputeCrc32(data);
-
-        binaryWriter.Write(crc);
-        fullStream.Close();
-        data = fullStream.ToArray();
+        data = memoryStream.ToArray();
 
         return data;
     }
@@ -177,22 +169,28 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
 
         if (DeserializePacket(data, out memoryStream, out packetHeader, ref userPacketHeader, ref reliablePacketHeader))
         {
-            if (userPacketHeader != null)
+            if (packetHeader.ProtocolID == ProtocolID)
             {
-                if (userPacketHeader.Reliable)
+                if (userPacketHeader != null)
                 {
-                    Action<ushort, uint, Stream> processCallback = GetPacketReceptionCallback(userPacketHeader.ObjectID);
-                    PacketReliabilityManager.Instance.ProcessReceivedStream(memoryStream, userPacketHeader, reliablePacketHeader, processCallback);
+                    if (userPacketHeader.Reliable)
+                    {
+                        Action<ushort, uint, Stream> processCallback = GetPacketReceptionCallback(userPacketHeader.ObjectID);
+                        PacketReliabilityManager.Instance.ProcessReceivedStream(memoryStream, 
+                                                                                userPacketHeader, 
+                                                                                reliablePacketHeader, 
+                                                                                processCallback);
+                    }
+                    else
+                        InvokeReceptionCallback(userPacketHeader.ObjectID, userPacketHeader.UserPacketTypeIndex,
+                                                userPacketHeader.SenderID, memoryStream);
                 }
                 else
-                    InvokeReceptionCallback(userPacketHeader.ObjectID, userPacketHeader.UserPacketTypeIndex,
-                                            userPacketHeader.SenderID, memoryStream);
-            }
-            else
-                systemPacketReceptionCallback?.Invoke(packetHeader.PacketTypeIndex, ipEndPoint, memoryStream);
+                    systemPacketReceptionCallback?.Invoke(packetHeader.PacketTypeIndex, ipEndPoint, memoryStream);
 
-            if (userPacketHeader == null || !userPacketHeader.Reliable)
-                memoryStream.Close();
+                if (userPacketHeader == null || !userPacketHeader.Reliable)
+                    memoryStream.Close();
+            }
         }  
     }
 }
