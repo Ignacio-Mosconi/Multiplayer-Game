@@ -6,6 +6,7 @@ enum PacketType
     ChallengeRequest,
     ChallengeResponse,
     ConnectionAccepted,
+    ClientJoined,
     User
 }
 

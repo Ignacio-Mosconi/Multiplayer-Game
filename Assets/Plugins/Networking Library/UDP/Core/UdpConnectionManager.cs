@@ -29,6 +29,7 @@ public struct UdpPendingClientData
 public class UdpConnectionManager : ConnectionManager
 {
     public Action<uint> OnClientAddedByServer { get; set; }
+    public Action<uint> OnOtherClientJoined { get; set; }
     public uint ClientID { get; private set; } = 1;
 
     Dictionary<IPEndPoint, uint> udpClientsIDs = new Dictionary<IPEndPoint, uint>();
@@ -116,6 +117,16 @@ public class UdpConnectionManager : ConnectionManager
                 }
                 break;
 
+            case PacketType.ClientJoined:
+                if (!UdpNetworkManager.Instance.IsServer && clientConnectionState == ClientConnectionState.Connected)
+                {
+                    ClientJoinedPacket clientJoinedPacket = new ClientJoinedPacket();
+                    
+                    clientJoinedPacket.Deserialize(stream);      
+                    OnOtherClientJoined.Invoke(clientJoinedPacket.Payload.clientID);
+                }
+                break;
+
             case PacketType.ConnectionRequest:
                 if (UdpNetworkManager.Instance.IsServer && !udpClientsIDs.ContainsKey(ipEndPoint))
                 {
@@ -147,15 +158,22 @@ public class UdpConnectionManager : ConnectionManager
 
                         if (challengeResponsePacket.Payload.result == serverResult)
                         {
+                            ClientJoinedPacket clientJoinedPacket = new ClientJoinedPacket();
+                            ClientJoinedData clientJoinedData;
+
+                            clientJoinedData.clientID = ClientID + 1;
+                            clientJoinedPacket.Payload = clientJoinedData;
+
+                            PacketsManager.Instance.SendPacket(clientJoinedPacket, null, 0, 0, reliable: true);
+
                             AddClient(ipEndPoint);
                             RemovePendingClient(ipEndPoint);
+                            
+                            OnClientAddedByServer?.Invoke(udpClientsIDs[ipEndPoint]);
                         }
                     }
                     if (udpClientsIDs.ContainsKey(ipEndPoint))
-                    {
                         SendConnectionAccepted(udpClientsData[udpClientsIDs[ipEndPoint]]);
-                        OnClientAddedByServer?.Invoke(udpClientsIDs[ipEndPoint]);
-                    }
                 }
                 break;
         }

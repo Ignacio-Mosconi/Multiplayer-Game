@@ -5,7 +5,8 @@ using TMPro;
 public enum UserPacketType
 {
     ChatMessage,
-    Transform
+    Transform,
+    Input
 }
 
 public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
