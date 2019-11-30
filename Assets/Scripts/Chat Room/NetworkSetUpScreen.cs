@@ -60,8 +60,8 @@ public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>
         ChatMessagesManager.Instance.UserDisplayName = displayNameInputField.text;
 
         if (NetworkManager.ConnectionProtocol == ConnectionProtocol.TCP)
-            TcpConnectionManager.Instance.ConnectToServer(ipAddress, port, MoveToChatScreen);
+            TcpConnectionManager.Instance.ConnectToServer(ipAddress, port, (clientsInSession) => MoveToChatScreen());
         else
-            UdpConnectionManager.Instance.ConnectToServer(ipAddress, port, MoveToChatScreen);
+            UdpConnectionManager.Instance.ConnectToServer(ipAddress, port, (clientsInSession) => MoveToChatScreen());
     }
 }

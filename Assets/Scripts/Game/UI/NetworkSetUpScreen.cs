@@ -15,10 +15,10 @@ namespace SpaceshipGame
             NetworkManager.ConnectionProtocol = ConnectionProtocol.UDP;
         }
 
-        void StartGame()
+        void StartGame(uint clientsInSession = 0)
         {
             gameObject.SetActive(false);
-            GameManager.Instance.StartGame();
+            GameManager.Instance.StartGame(clientsInSession);
         }
 
         public void StartServer()

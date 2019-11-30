@@ -57,7 +57,7 @@ namespace SpaceshipGame
 
         void OnDataReceived(ushort userPacketTypeIndex, uint senderID, Stream stream)
         {
-            if (userPacketTypeIndex != (ushort)UserPacketType.Transform)
+            if (userPacketTypeIndex != (ushort)UserPacketType.Transform || senderID != 0)
                 return;
 
             TransformPacket transformPacket = new TransformPacket();

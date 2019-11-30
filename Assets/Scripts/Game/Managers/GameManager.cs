@@ -13,29 +13,41 @@ namespace SpaceshipGame
     public struct EnemySpaceshipTransformData
     {
         public EnemySpaceship spaceship;
-        public List<TransformPacket> transforms;
+        public TransformPacket previousTransform;
+        public TransformPacket lastTransform;
     }
 
     public class GameManager : MonoBehaviourSingleton<GameManager>
     {
         [Header("Spaceships' Prefabs")]
-        [SerializeField] GameObject playerSpaceshipPrefab = default;
+        [SerializeField] GameObject[] playerSpaceshipPrefabs = new GameObject[PlayerCount];
         [SerializeField] GameObject[] enemySpaceshipPrefabs = new GameObject[PlayerCount];
 
         [Header("Spaceships' Properties")]
-        [SerializeField] Vector3 playerSpawnPoint = default;
-        [SerializeField] Vector3 enemySpawnPoint = default;
+        [SerializeField] Vector3[] playerSpawnPoints = new Vector3[PlayerCount];
         [SerializeField, Range(5f, 20f)] float spaceshipsSpeed = 10f;
+        [SerializeField, Range(0.01f, 1f)] float serverTimeStep = 0.1f;
 
         Dictionary<uint, EnemySpaceshipInputData> inputsByClientID = new Dictionary<uint, EnemySpaceshipInputData>();
         Dictionary<uint, EnemySpaceshipTransformData> otherClientsTransformsByID = new Dictionary<uint, EnemySpaceshipTransformData>();
+        float serverTimer = 0f;
+        int localPlayerIndex; 
 
         public const int PlayerCount = 2;
 
         void FixedUpdate()
         {
             if (UdpNetworkManager.Instance.IsServer)
-                UpdateServerClients();
+            {
+                serverTimer += Time.fixedDeltaTime;
+                if (serverTimer >= serverTimeStep)
+                {
+                    UpdateServerClients();
+                    serverTimer -= serverTimeStep;
+                }
+            }
+            else
+                UpdateOtherClients();
         }
 
         int GetCurrentClientCount()
@@ -59,12 +71,12 @@ namespace SpaceshipGame
 
             if (clientCount == 1)
             {
-                spawnPoint = playerSpawnPoint;
+                spawnPoint = playerSpawnPoints[0];
                 enemySpaceship = CreateSpaceship(enemySpaceshipPrefabs[0], spawnPoint) as EnemySpaceship;
             }
             else
             {
-                spawnPoint = enemySpawnPoint;
+                spawnPoint = playerSpawnPoints[1];
                 enemySpaceship = CreateSpaceship(enemySpaceshipPrefabs[1], spawnPoint) as EnemySpaceship;
             }
 
@@ -78,11 +90,17 @@ namespace SpaceshipGame
 
         void AddSpaceshipToClient(uint clientID)
         {
-            EnemySpaceship enemySpaceship = CreateSpaceship(enemySpaceshipPrefabs[1], enemySpawnPoint) as EnemySpaceship;
+            if (otherClientsTransformsByID.ContainsKey(clientID))
+                return;
+
+            int playerIndex = (localPlayerIndex == 0) ? 1 : 0;
+
+            EnemySpaceship enemySpaceship = CreateSpaceship(enemySpaceshipPrefabs[playerIndex], playerSpawnPoints[playerIndex]) as EnemySpaceship;
             EnemySpaceshipTransformData enemySpaceshipTransformData;
 
             enemySpaceshipTransformData.spaceship = enemySpaceship;
-            enemySpaceshipTransformData.transforms = new List<TransformPacket>();
+            enemySpaceshipTransformData.previousTransform = null;
+            enemySpaceshipTransformData.lastTransform = null;
 
             otherClientsTransformsByID.Add(clientID, enemySpaceshipTransformData);
         }
@@ -109,7 +127,23 @@ namespace SpaceshipGame
         
         void OnDataReceivedByClient(ushort userPacketTypeIndex, uint senderID, Stream stream)
         {
+            if (userPacketTypeIndex != (ushort)UserPacketType.Transform || senderID == UdpConnectionManager.Instance.ClientID)
+                return;
 
+            AddSpaceshipToClient(senderID);
+
+            TransformPacket transformPacket = new TransformPacket();
+
+            transformPacket.Deserialize(stream);
+            
+            EnemySpaceshipTransformData enemySpaceshipTransformData = otherClientsTransformsByID[senderID];
+
+            if (enemySpaceshipTransformData.lastTransform == null || 
+                transformPacket.Payload.inputSequenceID > enemySpaceshipTransformData.lastTransform.Payload.inputSequenceID)
+            {
+                enemySpaceshipTransformData.previousTransform = enemySpaceshipTransformData.lastTransform;
+                enemySpaceshipTransformData.lastTransform = transformPacket;
+            }
         }
 
         void UpdateServerClients()
@@ -152,19 +186,43 @@ namespace SpaceshipGame
                         transformPacket.Payload = transformData;
 
                         inputs.Clear();
+                        PacketsManager.Instance.SendPacket(transformPacket, UdpConnectionManager.Instance.GetClientIP(dicIterator.Current.Key));
                     }
                 }
         }
 
-        public void StartGame()
+        void UpdateOtherClients()
+        {
+            using (var dicIterator = otherClientsTransformsByID.GetEnumerator())
+                while (dicIterator.MoveNext())
+                {
+                    EnemySpaceshipTransformData enemySpaceshipTransformData = dicIterator.Current.Value;
+                    
+                    if (enemySpaceshipTransformData.previousTransform != null)
+                    {
+                        EnemySpaceship enemySpaceship = enemySpaceshipTransformData.spaceship;
+                        Vector3 lastPosition = new Vector3(enemySpaceshipTransformData.lastTransform.Payload.position[0],
+                                                            enemySpaceshipTransformData.lastTransform.Payload.position[1],
+                                                            enemySpaceshipTransformData.lastTransform.Payload.position[2]);
+                        Vector3 previousPosition = new Vector3(enemySpaceshipTransformData.previousTransform.Payload.position[0],
+                                                                enemySpaceshipTransformData.previousTransform.Payload.position[1],
+                                                                enemySpaceshipTransformData.previousTransform.Payload.position[2]);
+                        Vector3 direction = (lastPosition - previousPosition).normalized;
+
+                        enemySpaceship.Move(direction);
+                    }
+                }
+        }
+
+        public void StartGame(uint clientsInSession = 0)
         {
             if (UdpNetworkManager.Instance.IsServer)
                 UdpConnectionManager.Instance.OnClientAddedByServer += AddSpaceshipToServer;
             else
             {
+                localPlayerIndex = (clientsInSession == 1) ? 0 : 1;
                 UdpConnectionManager.Instance.OnOtherClientJoined += AddSpaceshipToClient;
-            
-                CreateSpaceship(playerSpaceshipPrefab, playerSpawnPoint);
+                CreateSpaceship(playerSpaceshipPrefabs[localPlayerIndex], playerSpawnPoints[localPlayerIndex]);
             }
 
             PacketsManager.Instance.AddUserPacketListener(0, OnDataReceived);

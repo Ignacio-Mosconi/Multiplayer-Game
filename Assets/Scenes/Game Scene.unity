@@ -254,14 +254,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc99818d9aeb15d4cb55de1eeba7dde9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerSpaceshipPrefab: {fileID: 99067425036616188, guid: 231a92d276803074fb7e68d023ed2102,
-    type: 3}
+  playerSpaceshipPrefabs:
+  - {fileID: 99067425036616188, guid: 231a92d276803074fb7e68d023ed2102, type: 3}
+  - {fileID: 2658952574212483626, guid: 700b19605f369d647a90c64d5ea870fe, type: 3}
   enemySpaceshipPrefabs:
   - {fileID: 1078135017632933884, guid: 7a96fef71c20ae942b2aff96f629f574, type: 3}
   - {fileID: 678795331863932207, guid: 9300a7e038e0df044998104da380cf7d, type: 3}
-  playerSpawnPoint: {x: 0, y: -3.75, z: 0}
-  enemySpawnPoint: {x: 0, y: 3.75, z: 0}
+  playerSpawnPoints:
+  - {x: 0, y: -3.75, z: 0}
+  - {x: 0, y: 3.75, z: 0}
   spaceshipsSpeed: 10
+  serverTimeStep: 0.1
 --- !u!1 &673565463
 GameObject:
   m_ObjectHideFlags: 0

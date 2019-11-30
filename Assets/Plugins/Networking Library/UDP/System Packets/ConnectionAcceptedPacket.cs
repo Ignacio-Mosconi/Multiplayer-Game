@@ -3,6 +3,7 @@ using System.IO;
 public struct ConnectionAcceptedData
 {
     public uint clientID;
+    public uint clientsInSession;
 }
 
 public class ConnectionAcceptedPacket : NetworkPacket<ConnectionAcceptedData>
@@ -16,6 +17,7 @@ public class ConnectionAcceptedPacket : NetworkPacket<ConnectionAcceptedData>
         BinaryWriter binaryWriter = new BinaryWriter(stream);
         
         binaryWriter.Write(Payload.clientID);
+        binaryWriter.Write(Payload.clientsInSession);
     }
     
     protected override void OnDeserialize(Stream stream)
@@ -24,6 +26,7 @@ public class ConnectionAcceptedPacket : NetworkPacket<ConnectionAcceptedData>
         ConnectionAcceptedData connectionAcceptedData;
         
         connectionAcceptedData.clientID = binaryReader.ReadUInt32();
+        connectionAcceptedData.clientsInSession = binaryReader.ReadUInt32();
         Payload = connectionAcceptedData;
     }
 }

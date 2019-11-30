@@ -26,7 +26,7 @@ public class TcpConnectionManager : ConnectionManager
     {
         if (hasToTriggerConnectionCallback)
         {
-            onClientConnectedCallback?.Invoke();
+            onClientConnectedCallback?.Invoke(0);
             hasToTriggerConnectionCallback = false;
         }
     }
@@ -36,7 +36,7 @@ public class TcpConnectionManager : ConnectionManager
         TcpNetworkManager.Instance.StartServer(port);
     }
 
-    public override void ConnectToServer(IPAddress ipAddress, int port, Action onClientConnectedCallback = null)
+    public override void ConnectToServer(IPAddress ipAddress, int port, Action<uint> onClientConnectedCallback = null)
     {
         this.onClientConnectedCallback = onClientConnectedCallback;
         TcpNetworkManager.Instance.OnClientConnected += () => hasToTriggerConnectionCallback = true;

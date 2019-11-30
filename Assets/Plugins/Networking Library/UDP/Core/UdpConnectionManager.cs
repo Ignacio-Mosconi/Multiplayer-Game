@@ -111,7 +111,7 @@ public class UdpConnectionManager : ConnectionManager
                     
                     connectionAcceptedPacket.Deserialize(stream);
                     UdpNetworkManager.Instance.SetClientID(connectionAcceptedPacket.Payload.clientID);
-                    onClientConnectedCallback?.Invoke();
+                    onClientConnectedCallback?.Invoke(connectionAcceptedPacket.Payload.clientsInSession);
                     onClientConnectedCallback = null;
                     clientConnectionState = ClientConnectionState.Connected;
                 }
@@ -216,6 +216,7 @@ public class UdpConnectionManager : ConnectionManager
         ConnectionAcceptedData connectionAcceptedData;
 
         connectionAcceptedData.clientID = udpClientData.id;
+        connectionAcceptedData.clientsInSession = (uint)udpClientsIDs.Count;
         connectionAcceptedPacket.Payload = connectionAcceptedData;
 
         PacketsManager.Instance.SendPacket(connectionAcceptedPacket, udpClientData.ipEndPoint);
@@ -275,7 +276,7 @@ public class UdpConnectionManager : ConnectionManager
         UdpNetworkManager.Instance.StartServer(port);
     }
 
-    public override void ConnectToServer(IPAddress ipAddress, int port, Action onClientConnectedCallback = null)
+    public override void ConnectToServer(IPAddress ipAddress, int port, Action<uint> onClientConnectedCallback = null)
     {
         this.onClientConnectedCallback = onClientConnectedCallback;
         UdpNetworkManager.Instance.StartClient(ipAddress, port);

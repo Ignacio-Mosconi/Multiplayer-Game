@@ -3,8 +3,8 @@ using System.Net;
 
 public abstract class ConnectionManager : MonoBehaviourSingleton<ConnectionManager>
 {
-    protected Action onClientConnectedCallback;
+    protected Action<uint> onClientConnectedCallback;
 
     public abstract void CreateServer(int port);
-    public abstract void ConnectToServer(IPAddress ipAddress, int port, Action onClientConnectedCallback = null);
+    public abstract void ConnectToServer(IPAddress ipAddress, int port, Action<uint> onClientConnectedCallback = null);
 }
