@@ -3,6 +3,7 @@ using System.IO;
 public struct TransformData
 {
     public byte flags;
+    public uint inputSequenceID;
     public float[] position;
     public float[] rotation;
     public float[] scale;
@@ -13,6 +14,7 @@ public class TransformPacket : UserNetworkPacket<TransformData>
     const ushort PositionBit = 1;
     const ushort RotationBit = 2;
     const ushort ScaleBit = 4;
+    const ushort InputSequenceIDBit = 8;
 
     public TransformPacket() : base((ushort)UserPacketType.Transform)
     {
@@ -34,6 +36,8 @@ public class TransformPacket : UserNetworkPacket<TransformData>
         if ((Payload.flags & ScaleBit) != 0)
             for (int i = 0; i < Payload.scale.Length; i++)
                 binaryWriter.Write(Payload.scale[i]);
+        if ((Payload.flags & InputSequenceIDBit) != 0)
+            binaryWriter.Write(Payload.inputSequenceID);
     }
     
     protected override void OnDeserialize(Stream stream)
@@ -46,6 +50,7 @@ public class TransformPacket : UserNetworkPacket<TransformData>
         transformData.position = null;
         transformData.rotation = null;
         transformData.scale = null;
+        transformData.inputSequenceID = 0;
         
         if ((transformData.flags & PositionBit) != 0)
         {
@@ -65,6 +70,8 @@ public class TransformPacket : UserNetworkPacket<TransformData>
             for (int i = 0; i < transformData.scale.Length; i++)
                 transformData.scale[i] = binaryReader.ReadSingle();
         }
+        if ((Payload.flags & InputSequenceIDBit) != 0)
+            transformData.inputSequenceID = binaryReader.ReadUInt32();
 
         Payload = transformData;
     }
