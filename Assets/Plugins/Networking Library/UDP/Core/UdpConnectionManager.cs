@@ -160,15 +160,13 @@ public class UdpConnectionManager : ConnectionManager
                         {
                             ClientJoinedPacket clientJoinedPacket = new ClientJoinedPacket();
                             ClientJoinedData clientJoinedData;
-
-                            clientJoinedData.clientID = ClientID + 1;
+                            
+                            clientJoinedData.clientID = ClientID;
                             clientJoinedPacket.Payload = clientJoinedData;
 
                             PacketsManager.Instance.SendPacket(clientJoinedPacket, null, 0, 0, reliable: true);
-
                             AddClient(ipEndPoint);
-                            RemovePendingClient(ipEndPoint);
-                            
+                            RemovePendingClient(ipEndPoint);              
                             OnClientAddedByServer?.Invoke(udpClientsIDs[ipEndPoint]);
                         }
                     }

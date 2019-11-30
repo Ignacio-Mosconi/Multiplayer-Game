@@ -4,22 +4,14 @@ using UnityEngine;
 
 namespace SpaceshipGame
 {
-    public struct SequencedInputPacket
-    {
-        public InputPacket inputPacket;
-        public uint inputSequenceID;
-    }
-
     public class SpaceshipController : MonoBehaviour, ISpaceship
     {
         [SerializeField] uint objectID = 0;
 
         public float Speed { get; set; }
 
-        List<SequencedInputPacket> inputsSent = new List<SequencedInputPacket>(MaxSequenceListSize);
+        List<InputPacket> inputsSent = new List<InputPacket>();
         uint currentInputSequenceID = 0;
-
-        const int MaxSequenceListSize = 20;
 
         void Start()
         {
@@ -32,30 +24,34 @@ namespace SpaceshipGame
 
             if (horizontalInput != 0f)
             {
-                Vector3 inputVector = transform.right * horizontalInput * Speed * Time.fixedDeltaTime;
-                transform.Translate(inputVector);
+                Vector3 inputVector = transform.right * horizontalInput;
+
+                PredictMovement(inputVector);
                 SendInputDataToServer(inputVector);
             }
         }
 
-        void ReconcilePosition(Vector3 serverPosition, Vector3 accumulatedInput)
+        void PredictMovement(Vector3 inputVector)
         {
-            transform.position = serverPosition + accumulatedInput;
+            transform.Translate(inputVector * Speed * Time.fixedDeltaTime);
+        }
+
+        void ReconcilePosition(Vector3 serverPosition, Vector3 accumulatedMovement)
+        {
+            transform.position = serverPosition + accumulatedMovement;
         }
 
         void SendInputDataToServer(Vector3 movementVector)
         {
             float[] movement = { movementVector.x, movementVector.y, movementVector.z };
-            SequencedInputPacket queueableInputPacket;
             InputPacket inputPacket = new InputPacket();
             InputData inputData;
 
+            inputData.sequenceID = currentInputSequenceID++;
             inputData.movement = movement;
             inputPacket.Payload = inputData; 
-            queueableInputPacket.inputPacket = inputPacket;
-            queueableInputPacket.inputSequenceID = currentInputSequenceID++;
 
-            inputsSent.Add(queueableInputPacket);
+            inputsSent.Add(inputPacket);
             PacketsManager.Instance.SendPacket(inputPacket, null, UdpNetworkManager.Instance.GetSenderID(), objectID, reliable: true);
         }
 
@@ -68,24 +64,24 @@ namespace SpaceshipGame
 
             transformPacket.Deserialize(stream);
 
-            int lastSequenceIDProcessedByServer = inputsSent.FindIndex(sip => sip.inputSequenceID == transformPacket.Payload.inputSequenceID);
+            int lastSequenceIDProcessedByServer = inputsSent.FindIndex(ip => ip.Payload.sequenceID == transformPacket.Payload.inputSequenceID);
 
             if (lastSequenceIDProcessedByServer != -1)
             {
                 float[] positionReceived = transformPacket.Payload.position;
                 Vector3 serverAuthoritativePosition = new Vector3(positionReceived[0], positionReceived[1], positionReceived[2]);
-                Vector3 accumulatedInput = Vector3.zero;
+                Vector3 accumulatedMovement = Vector3.zero;
 
                 for (int i = lastSequenceIDProcessedByServer + 1; i < inputsSent.Count; i++)
                 {
-                    float[] movement = inputsSent[i].inputPacket.Payload.movement;
+                    float[] movement = inputsSent[i].Payload.movement;
                     Vector3 movementVector = new Vector3(movement[0], movement[1], movement[2]);
                     
-                    accumulatedInput += movementVector;
+                    accumulatedMovement += movementVector * Speed * Time.fixedDeltaTime;
                 }
                 
                 inputsSent.RemoveAt(lastSequenceIDProcessedByServer);
-                ReconcilePosition(serverAuthoritativePosition, accumulatedInput);
+                ReconcilePosition(serverAuthoritativePosition, accumulatedMovement);
             }
         }
     }

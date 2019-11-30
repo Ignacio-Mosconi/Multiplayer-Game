@@ -111,7 +111,7 @@ GameObject:
   - component: {fileID: 3701114206915812752}
   - component: {fileID: 3701114206915812754}
   - component: {fileID: 3701114206915812755}
-  - component: {fileID: 3701114206915812757}
+  - component: {fileID: 7588494911171375882}
   m_Layer: 5
   m_Name: Network Set Up Screen
   m_TagString: Untagged
@@ -176,7 +176,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
---- !u!114 &3701114206915812757
+--- !u!114 &7588494911171375882
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -185,13 +185,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 3701114206915812753}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 769d3030a0eaf3e4aa9d621eb88211c2, type: 3}
+  m_Script: {fileID: 11500000, guid: e60a97045d7f82949afcc9167b04fd03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   addressInputField: {fileID: 3701114208682436106}
   portInputField: {fileID: 3701114208606728094}
   displayNameInputField: {fileID: 3701114207152623745}
-  protocolDropdown: {fileID: 0}
 --- !u!1 &3701114207088396152
 GameObject:
   m_ObjectHideFlags: 0
@@ -309,7 +308,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 3701114206915812757}
+      - m_Target: {fileID: 7588494911171375882}
         m_MethodName: StartServer
         m_Mode: 1
         m_Arguments:
@@ -2624,7 +2623,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 3701114206915812757}
+      - m_Target: {fileID: 7588494911171375882}
         m_MethodName: ConnectToServer
         m_Mode: 1
         m_Arguments:

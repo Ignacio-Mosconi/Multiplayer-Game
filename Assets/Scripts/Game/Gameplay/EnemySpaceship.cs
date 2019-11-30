@@ -7,9 +7,9 @@ namespace SpaceshipGame
     {
         public float Speed { get; set; }
 
-        public void Move(Vector3 translationVector)
+        public void Move(Vector3 accumulatedInputs)
         {
-            transform.Translate(translationVector);
+            transform.Translate(accumulatedInputs * Speed * Time.fixedDeltaTime);
         }
     }
 }
