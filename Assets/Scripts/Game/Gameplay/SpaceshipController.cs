@@ -57,7 +57,7 @@ namespace SpaceshipGame
 
         void OnDataReceived(ushort userPacketTypeIndex, uint senderID, Stream stream)
         {
-            if (userPacketTypeIndex != (ushort)UserPacketType.Transform || senderID != 0)
+            if (userPacketTypeIndex != (ushort)UserPacketType.Transform || senderID != UdpNetworkManager.Instance.GetSenderID())
                 return;
 
             TransformPacket transformPacket = new TransformPacket();
@@ -83,6 +83,11 @@ namespace SpaceshipGame
                 inputsSent.RemoveAt(lastSequenceIDProcessedByServer);
                 ReconcilePosition(serverAuthoritativePosition, accumulatedMovement);
             }
+        }
+
+        public uint ObjectID
+        {
+            get { return objectID; }
         }
     }
 }

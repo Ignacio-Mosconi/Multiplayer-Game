@@ -121,6 +121,8 @@ public class PacketsManager : MonoBehaviourSingleton<PacketsManager>, IDataRecei
     {
         if (!packetReceptionCallbacks.ContainsKey(objectID))
             packetReceptionCallbacks.Add(objectID, receptionCallback);
+        else
+            packetReceptionCallbacks[objectID] += receptionCallback;
     }
 
     Action<ushort, uint, Stream> GetPacketReceptionCallback(uint objectID)

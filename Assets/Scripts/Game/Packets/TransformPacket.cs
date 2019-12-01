@@ -11,6 +11,7 @@ public struct TransformData
 
 public enum TransformFlag
 {
+    None = 0,
     PositionBit = 1,
     RotationBit = 2,
     ScaleBit = 4,
@@ -73,7 +74,7 @@ public class TransformPacket : UserNetworkPacket<TransformData>
             for (int i = 0; i < transformData.scale.Length; i++)
                 transformData.scale[i] = binaryReader.ReadSingle();
         }
-        if ((Payload.flags & (int)TransformFlag.InputSequenceIDBit) != 0)
+        if ((transformData.flags & (int)TransformFlag.InputSequenceIDBit) != 0)
             transformData.inputSequenceID = binaryReader.ReadUInt32();
 
         Payload = transformData;
