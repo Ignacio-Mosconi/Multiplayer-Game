@@ -80,7 +80,7 @@ namespace SpaceshipGame
                     accumulatedMovement += movementVector * Speed * Time.fixedDeltaTime;
                 }
                 
-                inputsSent.RemoveAt(lastSequenceIDProcessedByServer);
+                inputsSent.RemoveRange(0, lastSequenceIDProcessedByServer);
                 ReconcilePosition(serverAuthoritativePosition, accumulatedMovement);
             }
         }
