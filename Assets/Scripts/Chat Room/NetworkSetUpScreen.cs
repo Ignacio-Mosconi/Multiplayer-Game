@@ -6,7 +6,9 @@ public enum UserPacketType
 {
     ChatMessage,
     Transform,
-    Input
+    Input,
+    ShotInput,
+    Notification
 }
 
 public class NetworkSetUpScreen : MonoBehaviourSingleton<NetworkSetUpScreen>

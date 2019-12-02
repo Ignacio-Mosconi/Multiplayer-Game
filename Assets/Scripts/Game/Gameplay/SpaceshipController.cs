@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 namespace SpaceshipGame
 {
     public class SpaceshipController : MonoBehaviour, ISpaceship
@@ -11,6 +12,7 @@ namespace SpaceshipGame
         public float Speed { get; set; }
 
         List<InputPacket> inputsSent = new List<InputPacket>();
+
         uint currentInputSequenceID = 0;
 
         void Start()
@@ -29,6 +31,24 @@ namespace SpaceshipGame
                 PredictMovement(inputVector);
                 SendInputDataToServer(inputVector);
             }
+
+           if (Input.GetButton("Fire1"))
+           {
+                RaycastHit2D hitInfo = Physics2D.Raycast(this.transform.position,Vector2.up);
+                ///
+                Gizmos.color = Color.green;
+                Gizmos.DrawLine(this.transform.position,Vector3.up);
+                ///
+                //Una de las opciones es utilizar un GameObject donde colisiona el rayo.
+                if (hitInfo.collider.tag == "Enemy")
+                {
+                    SendShotInputDataToServer(hitInfo.transform.position);
+                }     
+
+           }
+
+               
+
         }
 
         void PredictMovement(Vector3 inputVector)
@@ -53,6 +73,14 @@ namespace SpaceshipGame
 
             inputsSent.Add(inputPacket);
             PacketsManager.Instance.SendPacket(inputPacket, null, UdpNetworkManager.Instance.GetSenderID(), objectID, reliable: true);
+        }
+        void SendShotInputDataToServer(Vector3 hitPosition)
+        { 
+            float[] position = {hitPosition.x,hitPosition.y,hitPosition.z};
+            ShotInputPacket shotInputPacket = new ShotInputPacket();
+            ShotInputData shotInputData;
+            shotInputData.hitPosition = position;
+            PacketsManager.Instance.SendPacket(shotInputPacket, null, UdpNetworkManager.Instance.GetSenderID(), objectID, reliable: true);
         }
 
         void OnDataReceived(ushort userPacketTypeIndex, uint senderID, Stream stream)

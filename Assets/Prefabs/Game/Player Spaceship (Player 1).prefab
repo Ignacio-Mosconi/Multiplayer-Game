@@ -12,8 +12,8 @@ GameObject:
   - component: {fileID: 99067425036616191}
   - component: {fileID: 99067425036616161}
   m_Layer: 0
-  m_Name: Player Spaceship
-  m_TagString: Untagged
+  m_Name: Player Spaceship (Player 1)
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -92,5 +92,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04ed8e9125084834d8149b71d12c9813, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 10
   objectID: 0

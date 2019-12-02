@@ -9,7 +9,6 @@ namespace SpaceshipGame
         public EnemySpaceship spaceship;
         public List<InputPacket> inputs;
     }
-
     public struct EnemySpaceshipTransformData
     {
         public EnemySpaceship spaceship;
@@ -29,6 +28,7 @@ namespace SpaceshipGame
         [SerializeField, Range(0.01f, 1f)] float serverTimeStep = 0.01f;
 
         Dictionary<uint, EnemySpaceshipInputData> inputsByClientID = new Dictionary<uint, EnemySpaceshipInputData>();
+        Dictionary<uint, EnemySpaceship> enemySpaceshipsByClientID = new Dictionary<uint, EnemySpaceship>();
         Dictionary<uint, EnemySpaceshipTransformData> otherClientsTransformsByID = new Dictionary<uint, EnemySpaceshipTransformData>();
         SpaceshipController spaceshipController;
         float serverTimer = 0f;
@@ -87,6 +87,9 @@ namespace SpaceshipGame
             enemySpaceshipInputData.inputs = new List<InputPacket>();
             
             inputsByClientID.Add(clientID, enemySpaceshipInputData);
+
+            enemySpaceshipsByClientID.Add(clientID,enemySpaceship);
+
             PacketsManager.Instance.AddUserPacketListener(enemySpaceship.ObjectID, OnDataReceived);
         }
 
@@ -134,14 +137,32 @@ namespace SpaceshipGame
 
         void OnDataReceivedByServer(ushort userPacketTypeIndex, uint senderID, Stream stream)
         {
-            if (userPacketTypeIndex != (ushort)UserPacketType.Input)
-                return;
+            if (userPacketTypeIndex == (ushort)UserPacketType.Input)
+            {
+                InputPacket inputPacket = new InputPacket();
 
-            InputPacket inputPacket = new InputPacket();
-
-            inputPacket.Deserialize(stream);
+                inputPacket.Deserialize(stream);
             
-            inputsByClientID[senderID].inputs.Add(inputPacket);
+                inputsByClientID[senderID].inputs.Add(inputPacket);
+            }
+
+            if (userPacketTypeIndex == (ushort)UserPacketType.ShotInput)
+            {
+                ShotInputPacket shotInputPacket = new ShotInputPacket();
+
+                shotInputPacket.Deserialize(stream);
+
+            foreach (EnemySpaceship enemySpaceship in enemySpaceshipsByClientID.Values)
+            {
+               Vector3 hitPos = new Vector3(shotInputPacket.Payload.hitPosition[0], shotInputPacket.Payload.hitPosition[1], shotInputPacket.Payload.hitPosition[2]);
+                if (enemySpaceship.transform.position == hitPos)
+                {
+                    NotificationPacket notificationPacket = new NotificationPacket();
+                    notificationPacket.Deserialize(stream);
+                   // PacketsManager.Instance.SendPacket(notificationPacket, null,senderID,0,true);
+                }
+            }
+            }           
         }
         
         void OnDataReceivedByClient(ushort userPacketTypeIndex, uint senderID, Stream stream)

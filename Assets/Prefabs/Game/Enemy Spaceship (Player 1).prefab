@@ -12,6 +12,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: Enemy Spaceship (Player 1)
       objectReference: {fileID: 0}
+    - target: {fileID: 678795331863932207, guid: 9300a7e038e0df044998104da380cf7d,
+        type: 3}
+      propertyPath: m_TagString
+      value: Enemy
+      objectReference: {fileID: 0}
+    - target: {fileID: 678795331863932207, guid: 9300a7e038e0df044998104da380cf7d,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 678795331863932177, guid: 9300a7e038e0df044998104da380cf7d,
         type: 3}
       propertyPath: m_LocalPosition.x
