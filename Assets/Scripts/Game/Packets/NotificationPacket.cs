@@ -1,17 +1,18 @@
 ﻿using System.IO;
-        public enum PlayerStatus
-        {
-            Alive = 0,
-            Dead = 1
-        }
+
+public enum PlayerStatus
+{
+    Alive = 0,
+    Dead = 1
+}
+
 public struct NotificationData
 {
      public uint playerStatus;
 }
+
 public class NotificationPacket : UserNetworkPacket<NotificationData>
 {
-    
-
     public NotificationPacket() : base((ushort)UserPacketType.Notification)
     {
 
@@ -22,10 +23,8 @@ public class NotificationPacket : UserNetworkPacket<NotificationData>
         BinaryReader binaryReader =  new BinaryReader(stream);
 
         NotificationData notificationData;
-        
-        uint status = (uint)PlayerStatus.Dead; 
 
-        notificationData.playerStatus = status;
+        notificationData.playerStatus = binaryReader.ReadUInt32();
         
         Payload = notificationData;
     }

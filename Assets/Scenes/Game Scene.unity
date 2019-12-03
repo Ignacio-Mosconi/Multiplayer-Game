@@ -256,7 +256,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerSpaceshipPrefabs:
   - {fileID: 99067425036616188, guid: 231a92d276803074fb7e68d023ed2102, type: 3}
-  - {fileID: 2718355630390078425, guid: 700b19605f369d647a90c64d5ea870fe, type: 3}
+  - {fileID: 2658952574212483626, guid: 700b19605f369d647a90c64d5ea870fe, type: 3}
   enemySpaceshipPrefabs:
   - {fileID: 548839732245351106, guid: 7a96fef71c20ae942b2aff96f629f574, type: 3}
   - {fileID: 678795331863932207, guid: 9300a7e038e0df044998104da380cf7d, type: 3}

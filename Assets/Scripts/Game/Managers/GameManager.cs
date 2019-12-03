@@ -88,7 +88,7 @@ namespace SpaceshipGame
             
             inputsByClientID.Add(clientID, enemySpaceshipInputData);
 
-            enemySpaceshipsByClientID.Add(clientID,enemySpaceship);
+            enemySpaceshipsByClientID.Add(clientID, enemySpaceship);
 
             PacketsManager.Instance.AddUserPacketListener(enemySpaceship.ObjectID, OnDataReceived);
         }
@@ -152,38 +152,65 @@ namespace SpaceshipGame
 
                 shotInputPacket.Deserialize(stream);
 
-            foreach (EnemySpaceship enemySpaceship in enemySpaceshipsByClientID.Values)
-            {
-               Vector3 hitPos = new Vector3(shotInputPacket.Payload.hitPosition[0], shotInputPacket.Payload.hitPosition[1], shotInputPacket.Payload.hitPosition[2]);
-                if (enemySpaceship.transform.position == hitPos)
-                {
-                    NotificationPacket notificationPacket = new NotificationPacket();
-                    notificationPacket.Deserialize(stream);
-                   // PacketsManager.Instance.SendPacket(notificationPacket, null,senderID,0,true);
-                }
-            }
+                using (var dicIterator = enemySpaceshipsByClientID.GetEnumerator())
+                    while (dicIterator.MoveNext())
+                    {
+                        EnemySpaceship enemySpaceship = dicIterator.Current.Value;
+                        Vector3 hitPos = new Vector3(shotInputPacket.Payload.hitPosition[0], 
+                                                        shotInputPacket.Payload.hitPosition[1], 
+                                                        shotInputPacket.Payload.hitPosition[2]);
+                        
+                        if (enemySpaceship.transform.position == hitPos)
+                        {
+                            NotificationPacket notificationPacket = new NotificationPacket();
+                            NotificationData notificationData;
+                            uint receiverID = dicIterator.Current.Key;
+
+                            notificationData.playerStatus = (uint)PlayerStatus.Dead;
+                            notificationPacket.Payload = notificationData;
+
+                            PacketsManager.Instance.SendPacket(notificationPacket, 
+                                                                UdpConnectionManager.Instance.GetClientIP(receiverID), 
+                                                                senderID, 
+                                                                enemySpaceship.ObjectID,
+                                                                reliable: true);
+                        }
+                    }
             }           
         }
         
         void OnDataReceivedByClient(ushort userPacketTypeIndex, uint senderID, Stream stream)
         {
-            if (userPacketTypeIndex != (ushort)UserPacketType.Transform || senderID == UdpNetworkManager.Instance.GetSenderID())
+            if (senderID == UdpNetworkManager.Instance.GetSenderID())
                 return;
 
-            AddSpaceshipToClient(senderID);
-
-            TransformPacket transformPacket = new TransformPacket();
-
-            transformPacket.Deserialize(stream);
-            
-            EnemySpaceshipTransformData enemySpaceshipTransformData = otherClientsTransformsByID[senderID];
-
-            if (enemySpaceshipTransformData.lastTransform == null || 
-                transformPacket.Payload.inputSequenceID > enemySpaceshipTransformData.lastTransform.Payload.inputSequenceID)
+            if (userPacketTypeIndex == (uint)UserPacketType.Transform)
             {
-                enemySpaceshipTransformData.previousTransform = enemySpaceshipTransformData.lastTransform;
-                enemySpaceshipTransformData.lastTransform = transformPacket;
-                otherClientsTransformsByID[senderID] = enemySpaceshipTransformData;
+                AddSpaceshipToClient(senderID);
+
+                TransformPacket transformPacket = new TransformPacket();
+
+                transformPacket.Deserialize(stream);
+                
+                EnemySpaceshipTransformData enemySpaceshipTransformData = otherClientsTransformsByID[senderID];
+
+                if (enemySpaceshipTransformData.lastTransform == null || 
+                    transformPacket.Payload.inputSequenceID > enemySpaceshipTransformData.lastTransform.Payload.inputSequenceID)
+                {
+                    enemySpaceshipTransformData.previousTransform = enemySpaceshipTransformData.lastTransform;
+                    enemySpaceshipTransformData.lastTransform = transformPacket;
+                    otherClientsTransformsByID[senderID] = enemySpaceshipTransformData;
+                }
+            }
+
+            if (userPacketTypeIndex == (uint)UserPacketType.Notification)
+            {
+                NotificationPacket notificationPacket = new NotificationPacket();
+
+                notificationPacket.Deserialize(stream);
+
+                if (notificationPacket.Payload.playerStatus == (uint)PlayerStatus.Dead)
+                    spaceshipController.Die();
             }
         }
 

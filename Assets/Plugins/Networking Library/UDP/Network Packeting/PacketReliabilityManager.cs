@@ -42,7 +42,7 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
     Dictionary<uint, int> nextExpectedIDs = new Dictionary<uint, int>();
     Dictionary<uint, int> acknowledges = new Dictionary<uint, int>();
     Dictionary<uint, int> ackBits = new Dictionary<uint, int>();
-    int currentPacketID = 0;
+    Dictionary<uint, int> currentPacketIDs = new Dictionary<uint, int>();
 
     const int AckBitsCount = sizeof(uint) * 8;
 
@@ -66,6 +66,7 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
         nextExpectedIDs.Add(id, 0);
         acknowledges.Add(id, -Int32.MaxValue);
         ackBits.Add(id, 0);
+        currentPacketIDs.Add(id, 0);
 
         for (int i = 0; i < AckBitsCount; i++)
         {
@@ -135,14 +136,13 @@ public class PacketReliabilityManager : MonoBehaviourSingleton<PacketReliability
 
     public void SendPacket<T>(NetworkPacket<T> networkPacket, uint senderID, uint objectID)
     {
-        int packetID = currentPacketID++;
-
         foreach (uint recipientID in packetsPendingAck.Keys)
         {
             ReliablePacketHeader reliablePacketHeader = new ReliablePacketHeader();
             MemoryStream memoryStream = new MemoryStream();
             PacketPendingAck packetPendingAck;
             byte[] dataToSend;
+            int packetID = currentPacketIDs[recipientID]++;
 
             reliablePacketHeader.PacketID = packetID;
             reliablePacketHeader.Acknowledge = acknowledges[recipientID];

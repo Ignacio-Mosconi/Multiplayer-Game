@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace SpaceshipGame
 {
+    [RequireComponent(typeof(BoxCollider2D))]
     public class SpaceshipController : MonoBehaviour, ISpaceship
     {
         [SerializeField] uint objectID = 0;
@@ -12,11 +13,19 @@ namespace SpaceshipGame
         public float Speed { get; set; }
 
         List<InputPacket> inputsSent = new List<InputPacket>();
+        BoxCollider2D boxCollider;
+        Vector2 initialPosition;
 
         uint currentInputSequenceID = 0;
 
+        void Awake()
+        {
+            boxCollider = GetComponent<BoxCollider2D>();
+        }
+
         void Start()
         {
+            initialPosition = transform.position;
             PacketsManager.Instance.AddUserPacketListener(objectID, OnDataReceived);
         }
         
@@ -32,23 +41,18 @@ namespace SpaceshipGame
                 SendInputDataToServer(inputVector);
             }
 
-           if (Input.GetButton("Fire1"))
-           {
-                RaycastHit2D hitInfo = Physics2D.Raycast(this.transform.position,Vector2.up);
-                ///
-                Gizmos.color = Color.green;
-                Gizmos.DrawLine(this.transform.position,Vector3.up);
-                ///
-                //Una de las opciones es utilizar un GameObject donde colisiona el rayo.
-                if (hitInfo.collider.tag == "Enemy")
+            if (Input.GetButton("Fire1"))
+            {
+                RaycastHit2D hitInfo = Physics2D.Raycast(this.transform.position, 
+                                                        Vector2.up, 
+                                                        float.MaxValue, 
+                                                        ~LayerMask.GetMask(LayerMask.LayerToName(gameObject.layer)));
+
+                if (hitInfo.collider && hitInfo.collider.tag == "Enemy")
                 {
                     SendShotInputDataToServer(hitInfo.transform.position);
-                }     
-
-           }
-
-               
-
+                }
+            }
         }
 
         void PredictMovement(Vector3 inputVector)
@@ -74,12 +78,15 @@ namespace SpaceshipGame
             inputsSent.Add(inputPacket);
             PacketsManager.Instance.SendPacket(inputPacket, null, UdpNetworkManager.Instance.GetSenderID(), objectID, reliable: true);
         }
+
         void SendShotInputDataToServer(Vector3 hitPosition)
         { 
-            float[] position = {hitPosition.x,hitPosition.y,hitPosition.z};
+            float[] position = { hitPosition.x, hitPosition.y, hitPosition.z };
             ShotInputPacket shotInputPacket = new ShotInputPacket();
             ShotInputData shotInputData;
             shotInputData.hitPosition = position;
+
+            shotInputPacket.Payload = shotInputData;
             PacketsManager.Instance.SendPacket(shotInputPacket, null, UdpNetworkManager.Instance.GetSenderID(), objectID, reliable: true);
         }
 
@@ -111,6 +118,11 @@ namespace SpaceshipGame
                 inputsSent.RemoveRange(0, lastSequenceIDProcessedByServer);
                 ReconcilePosition(serverAuthoritativePosition, accumulatedMovement);
             }
+        }
+
+        public void Die()
+        {
+            transform.position = initialPosition;
         }
 
         public uint ObjectID
